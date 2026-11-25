@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7. blokk – Ami kilóg a sorból: Anomáliadetektálás</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+  .heat { display: grid; grid-template-columns: 96px repeat(24, minmax(0, 1fr)); gap: 3px; }
+  .heat span { font-family: var(--mono); font-size: 11px; color: var(--muted); display: flex; align-items: center; }
+  .heat .c { aspect-ratio: 1; border-radius: 3px; background: #13212C; }
+  .heat .hh { justify-content: center; }
+  .note { font-size: 15px; color: var(--snow); }
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 110px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 40px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card7 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card7.hot { border-top-color: var(--amber); }
+  .cmp .num7 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num7 { color: var(--amber); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .head .wrap, .tune { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 14px; }
+    .heat { grid-template-columns: 40px repeat(24, minmax(0, 1fr)); gap: 2px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 100px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 7. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">7. blokk · „B” modul · L2 elemző szint</p>
+      <h1>Ami kilóg a sorból <span>Anomáliadetektálás</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Anomália jelentés</span>
+        <span class="chip">Anomáliavadász jelvény</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0240 · P3 · nyitott</span>
+      <p>„A tűzfal óránként összesíti minden eszköz forgalmát. 10 000 sor, senki nem ér rá elolvasni. Van benne valami furcsa? És ha igen, mi?” – L3 biztonsági felelős</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Elmagyarázod, miben más a felügyelet nélküli tanulás, és miért nem azonos az anomália a támadással.</li>
+      <li>Klaszterezéssel csoportosítod az eszközöket, és észreveszed, ki lóg ki a csoportjából.</li>
+      <li>Isolation Foresttel megkeresed a legfurcsább órákat, és számokkal bizonyítod, mi a gyanús.</li>
+      <li>Anomália jelentést írsz és mutatsz be: kiszűröd a téves riasztásokat, és nem vádolsz senkit.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline" style="grid-template-columns:10fr 30fr 5fr 35fr 10fr;">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Z-pontszám, klaszterezés, Isolation Forest, jelentés</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–80</b><h3>Labor</h3><p>Küldetések párban, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>80–90</b><h3>Bemutatók</h3><p>Anomália jelentés, páronként 2 perc</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="csoportok">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Klaszterezés · 60 eszköz, 4 csoport</p>
+      <h2>Kik viselkednek egyformán?</h2>
+      <p>Eszközönként egy profil (átlagos forgalom, aktív órák aránya), logaritmus és skálázás után k-közép algoritmussal. A csoportoknak nincs nevük: azt mi adjuk, miután megnéztük, kik vannak benne.</p>
+    </div>
+    <div class="cmp">
+      <div class="card7"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">1. CSOPORT</span><span class="num7">45</span><p class="muted">labor és tanári gépek</p></div>
+      <div class="card7"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">2. CSOPORT</span><span class="num7">10</span><p class="muted">kamerák, nyomtatók, backup</p></div>
+      <div class="card7"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">3. CSOPORT</span><span class="num7">4</span><p class="muted">szerverek</p></div>
+      <div class="card7 hot"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">4. CSOPORT</span><span class="num7">1</span><p class="muted">lab-pc-23, egyedül: ez már gyanús</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="hoterkep">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Nézd meg te is: egy hét óráról órára</p>
+      <h2>Mikor csinál mit az eszköz?</h2>
+      <p>Soronként egy nap, oszloponként egy óra (0–23). Minél világosabb a négyzet, annál nagyobb az érték (a két labor gép közös skálán, narancs = kiugró). Válts az eszközök között, és keresd meg, mi nem illik a képbe.</p>
+    </div>
+    <div class="tool">
+      <div class="toggle" role="group" aria-label="Melyik eszközt mutassuk?">
+        <button type="button" data-k="lab-pc-05" aria-pressed="true">lab-pc-05 · különböző portok</button>
+        <button type="button" data-k="lab-pc-23" aria-pressed="false">lab-pc-23 · különböző portok</button>
+        <button type="button" data-k="backup-01" aria-pressed="false">backup-01 · kimenő MB</button>
+      </div>
+      <div class="heat" id="heat" role="img" aria-label="Hőtérkép: az eszköz óránkénti értékei egy héten át"></div>
+      <p class="note" id="heat-note" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="hangolo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: riasztás-hangoló</p>
+      <h2>Mennyi riasztás jön, és benne van-e a valódi?</h2>
+      <p>A labor valódi eredményei, előre kiszámolva. Az Isolation Forest mindenkit közös mércével mér; a saját alapvonal minden eszközt a saját átlagához és szórásához. Állítsd az érzékenységet, és figyeld, hány riasztás jön, és elkapjuk-e a lab-pc-23-at.</p>
+    </div>
+    <div class="tune">
+      <div class="tool">
+        <div class="toggle" role="group" aria-label="Módszer">
+          <button type="button" id="m-iso" aria-pressed="true">Isolation Forest (közös mérce)</button>
+          <button type="button" id="m-base" aria-pressed="false">Saját alapvonal</button>
+        </div>
+        <div class="row"><label for="lvl" id="lvl-l">contamination</label><input type="range" id="lvl" min="0" max="3" step="1" value="1"><output id="lvlo"></output></div>
+        <div class="bars" id="bars" aria-live="polite"></div>
+      </div>
+      <div class="result">
+        <span class="k">Riasztás (óra)</span>
+        <span class="big" id="tot"></span>
+        <span class="k">Érintett eszköz</span>
+        <span class="big" id="dev" style="font-size:28px;color:var(--snow);"></span>
+        <p class="verdict" id="verd"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Anomália jelentés · 10 pont · párban</p>
+      <h2>Hat küldetés, egy jelentés, két perc</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Minden küldetés után futtasd az ellenőrzőt: <span class="mono">ellenoriz("M2", valasz)</span>.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Z-pontszám</b></td><td>Kinél lóg ki a legtöbb óra a kimenő forgalomban? Baj ez?</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>Klaszterezés</b></td><td>Eszközprofilok, 4 csoport: ki maradt egyedül?</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>Isolation Forest</b></td><td>Kié a legfurcsább óra?</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Bizonyíték</b></td><td>Melyik jellemző lóg ki a legjobban?</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Anomália jelentés</b></td><td>Kitöltött sablon és 2 perces bemutató</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz: saját alapvonal</b></td><td>Hány óra marad, ha mindenkit a saját normálisához mérünk?</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Anomáliavadász jelvény: a jelentésben a valódi incidenst számokkal bizonyítod, és a téves riasztásokat megindokolva kiszűröd. Kódex: a jelentés eszközről szól, nem emberről.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/TKwsEkCisjdxsxq2SCSrwG">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 8. blokk</p>
+        <h3>Csendesebb éjszakák – Prediktív riasztás</h3>
+        <p class="muted">Ma 101 riasztásból egy volt valódi. Jövő héten: kevesebb zaj, és riasztás még a baj előtt.</p>
+      </div>
+      <a class="btn" href="blokk-08.html">Tovább a 8. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const O = {"iso":{"0.005":{"backup-01":17,"srv-02":9,"srv-03":7,"srv-04":6,"srv-01":6,"lab-pc-23":6},"0.01":{"srv-03":24,"backup-01":21,"srv-04":18,"srv-02":17,"srv-01":15,"lab-pc-23":6},"0.02":{"srv-04":46,"srv-02":44,"srv-03":43,"srv-01":41,"backup-01":21,"lab-pc-23":6,"lab-pc-02":1},"0.05":{"srv-04":99,"srv-01":88,"srv-02":87,"srv-03":84,"backup-01":21,"tanar-04":11,"tanar-05":8,"tanar-08":7}},"base":{"3":{"backup-01":22,"nyomtato-06":20,"lab-pc-13":15,"nyomtato-02":14,"nyomtato-04":14,"lab-pc-23":11,"lab-pc-14":11,"lab-pc-02":10},"4":{"lab-pc-23":6,"lab-pc-02":2,"nyomtato-01":2,"backup-01":1,"lab-pc-10":1,"nyomtato-04":1,"lab-pc-30":1,"lab-pc-31":1},"5":{"lab-pc-23":6},"8":{}},"heat":{"lab-pc-05":[1,0,0,2,1,0,1,1,6,8,4,4,8,7,7,1,1,1,0,0,1,1,0,1,1,3,1,1,1,0,1,1,4,8,5,6,3,4,4,0,0,1,1,2,2,2,1,0,2,0,0,1,1,0,0,1,3,1,2,2,1,2,2,0,1,2,2,1,0,1,3,2,2,0,1,1,0,1,2,2,1,2,0,0,2,0,2,1,0,0,0,1,2,3,1,1,0,2,0,1,3,0,1,2,4,5,8,3,9,6,7,0,2,0,1,2,0,0,2,3,1,1,1,0,2,0,1,2,7,5,7,7,7,9,6,1,1,0,2,1,2,1,1,0,2,2,2,1,1,0,1,1,8,9,5,9,10,4,7,2,2,2,1,0,2,0,1,3],"lab-pc-23":[1,1,1,0,1,2,1,3,9,4,6,7,6,6,2,0,0,1,3,1,1,2,0,2,1,1,0,1,1,0,0,1,5,7,4,6,7,9,1,1,2,1,1,3,0,1,2,1,2,1,2,0,2,2,2,1,2,1,0,1,1,0,2,0,1,2,1,1,1,1,1,1,1,1,1,3,2,2,0,0,1,1,1,0,0,3,3,1,1,0,0,0,2,0,2,1,1,1,2,2,1,0,2,2,8,7,7,6,6,3,7,0,1,1,1,2,0,2,0,1,2,0,1149,935,968,1,1,2,5,4,6,6,6,6,9,1,0,1,1,2,1,2,1,1,2,2,1237,1069,1064,4,1,1,4,5,5,9,7,10,4,2,1,0,1,2,0,1,0,1],"backup-01":[1.0,6063.0,6664.0,6072.0,4.0,1.0,2.0,2.0,3.0,3.0,2.0,4.0,2.0,2.0,3.0,3.0,3.0,2.0,2.0,2.0,1.0,2.0,2.0,0.0,0.0,5943.0,6223.0,5990.0,2.0,4.0,2.0,2.0,1.0,2.0,2.0,2.0,2.0,3.0,2.0,4.0,1.0,1.0,4.0,2.0,2.0,3.0,1.0,2.0,1.0,6538.0,6050.0,5518.0,2.0,1.0,1.0,3.0,2.0,2.0,3.0,4.0,1.0,1.0,3.0,3.0,2.0,2.0,4.0,3.0,3.0,0.0,2.0,2.0,2.0,5880.0,5975.0,5817.0,3.0,1.0,2.0,2.0,2.0,3.0,2.0,2.0,1.0,2.0,0.0,1.0,1.0,3.0,2.0,2.0,3.0,4.0,2.0,2.0,0.0,6524.0,6180.0,7024.0,3.0,1.0,4.0,2.0,2.0,1.0,3.0,2.0,3.0,2.0,3.0,2.0,2.0,1.0,2.0,2.0,3.0,4.0,0.0,0.0,2.0,5694.0,5614.0,5309.0,2.0,4.0,3.0,2.0,3.0,2.0,1.0,1.0,0.0,2.0,2.0,2.0,0.0,2.0,3.0,2.0,2.0,3.0,2.0,2.0,1.0,6485.0,6436.0,6514.0,0.0,1.0,2.0,1.0,2.0,2.0,1.0,2.0,1.0,3.0,3.0,2.0,2.0,1.0,3.0,2.0,2.0,0.0,0.0,3.0]},"isoN":{"0.005":[51,6],"0.01":[101,6],"0.02":[202,7],"0.05":[504,48]},"baseN":{"3":[399,50],"4":[21,14],"5":[6,1],"8":[0,0]}};
+// Hőtérkép: 2026-11-05 (csütörtök) 00:00-tól 168 óra
+const NAPOK = ['nov. 5. Cs', 'nov. 6. P', 'nov. 7. Szo', 'nov. 8. V', 'nov. 9. H', 'nov. 10. K', 'nov. 11. Sze'];
+const NOTE = {
+  'lab-pc-05': 'Egy átlagos labor gép: hétköznap 8 és 15 óra között 5–10 különböző port, éjjel és hétvégén csend. Ez a normális.',
+  'lab-pc-23': 'Nappal ugyanolyan, mint a többi labor gép. De nov. 10-én és 11-én éjjel 2 és 5 óra között óránként kb. 1000 különböző port: ez portszkennelés.',
+  'backup-01': 'Minden éjjel 1 és 4 óra között kb. 6000 MB kimenő forgalom. Statisztikailag kilóg, de ez az éjszakai mentés: a normális működése.'
+};
+function heat(k) {
+  const v = O.heat[k], mx = k === 'backup-01' ? Math.log1p(Math.max(...v)) : Math.log1p(1300); // a két labor gép közös skálán
+  const h = document.getElementById('heat'); h.innerHTML = '<span></span>';
+  for (let i = 0; i < 24; i++) h.innerHTML += `<span class="hh">${i % 3 === 0 ? i : ''}</span>`;
+  for (let d = 0; d < 7; d++) {
+    let row = `<span>${NAPOK[d]}</span>`;
+    for (let i = 0; i < 24; i++) {
+      const x = v[d * 24 + i], a = Math.log1p(x) / mx;
+      const col = a > .75 ? `rgba(240,168,48,${(.35 + .65 * a).toFixed(2)})` : `rgba(76,195,217,${(.08 + .8 * a).toFixed(2)})`;
+      row += `<span class="c" style="background:${col}" title="${NAPOK[d]} ${i}:00 · ${x}"></span>`;
+    }
+    h.innerHTML += row;
+  }
+  document.getElementById('heat-note').textContent = NOTE[k];
+  document.querySelectorAll('#hoterkep .toggle button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === k));
+}
+document.querySelectorAll('#hoterkep .toggle button').forEach(b => b.addEventListener('click', () => heat(b.dataset.k)));
+heat('lab-pc-05');
+
+// Riasztás-hangoló
+const LV = { iso: ['0.005', '0.01', '0.02', '0.05'], base: ['3', '4', '5', '8'] };
+let mode = 'iso';
+function tune() {
+  const i = +document.getElementById('lvl').value, key = LV[mode][i];
+  const top = mode === 'iso' ? O.iso[key] : O.base[key], [tot, dev] = mode === 'iso' ? O.isoN[key] : O.baseN[key];
+  document.getElementById('lvl-l').textContent = mode === 'iso' ? 'contamination' : 'küszöb (|z| >)';
+  document.getElementById('lvlo').textContent = mode === 'iso' ? (parseFloat(key) * 100).toString().replace('.', ',') + '%' : key + ' szórás';
+  document.getElementById('tot').textContent = tot;
+  document.getElementById('dev').textContent = dev + ' eszköz';
+  const mx = Math.max(1, ...Object.values(top));
+  const bars = document.getElementById('bars'); bars.innerHTML = '';
+  if (!Object.keys(top).length) bars.innerHTML = '<p class="muted">Egyetlen riasztás sincs.</p>';
+  Object.entries(top).forEach(([k, n]) => {
+    const el = document.createElement('div'); el.className = 'bar' + (k === 'lab-pc-23' ? ' hit' : '');
+    el.innerHTML = `<span></span><span class="t"><div style="width:${n / mx * 100}%"></div></span><b>${n}</b>`;
+    el.firstChild.textContent = k; bars.appendChild(el);
+  });
+  const hit = 'lab-pc-23' in top;
+  let v;
+  if (!hit) v = tot === 0 ? 'Túl szigorú: nincs zaj, de a valódi incidenst is elvesztetted.' : 'A lab-pc-23 be sem fér a 8 legtöbbet riasztó eszköz közé: a valódi incidens elveszett a zajban.';
+  else if (tot <= 10) v = 'Telitalálat: a lab-pc-23 minden gyanús órája megvan, és szinte semmi zaj.';
+  else v = `Elkaptuk a lab-pc-23-at, de ${tot - top['lab-pc-23']} másik riasztás is jön mellé. Ennyit kell egy ügyeletesnek átnéznie.`;
+  document.getElementById('verd').textContent = v;
+}
+function setMode(m) { mode = m; document.getElementById('m-iso').setAttribute('aria-pressed', m === 'iso'); document.getElementById('m-base').setAttribute('aria-pressed', m === 'base'); tune(); }
+document.getElementById('m-iso').addEventListener('click', () => setMode('iso'));
+document.getElementById('m-base').addEventListener('click', () => setMode('base'));
+document.getElementById('lvl').addEventListener('input', tune);
+tune();
+</script>
+</body>
+</html>

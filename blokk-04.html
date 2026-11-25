@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4. blokk – Honnan jön a jel?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(44px, 7vw, 84px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 35fr 10fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); }
+  .seg.qz { border-top-color: var(--amber); }
+  .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; }
+  .seg p { font-size: 14px; color: var(--muted); }
+
+  .sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .src { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .src .q { font-family: var(--display); font-size: 24px; font-weight: 600; line-height: 1.15; }
+  .src .meta { font-family: var(--mono); font-size: 12.5px; color: var(--cyan); }
+  .src p { color: var(--muted); font-size: 15px; }
+
+  .pipe { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 10px; align-items: stretch; }
+  .pipe .arrow { align-self: center; font-family: var(--mono); color: var(--amber); font-size: 22px; }
+  .ntp { margin-top: 12px; text-align: center; font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--night); background: var(--cyan); border-radius: 8px; padding: 10px; }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+  .tool label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .tool input[type=number] { width: 120px; background: var(--night); color: var(--snow); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font-family: var(--mono); font-size: 20px; }
+  .pri-out { display: flex; flex-wrap: wrap; gap: 12px; }
+  .pri-box { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; min-width: 160px; }
+  .pri-box b { display: block; font-family: var(--mono); font-size: 24px; color: var(--amber); }
+  .pri-box span { font-size: 13.5px; color: var(--muted); }
+  .sevbar { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+  .sev { font-family: var(--mono); font-size: 11.5px; text-align: center; padding: 8px 2px; border-radius: 5px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
+  .sev.on { background: var(--amber); color: var(--night); border-color: var(--amber); font-weight: 700; }
+
+  .match { display: flex; flex-direction: column; gap: 12px; }
+  .mq { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .mq p.text { font-size: 16px; }
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choice { font-family: var(--mono); font-weight: 600; font-size: 13px; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); cursor: pointer; }
+  .choice:hover { border-color: var(--amber); }
+  .choice[disabled] { cursor: default; opacity: .5; }
+  .choice.ok { opacity: 1; border-color: var(--green); }
+  .choice.miss { opacity: 1; border-color: var(--red); }
+  .fb { font-size: 14.5px; color: var(--muted); }
+  .fb b { font-family: var(--mono); }
+  .score-line { font-family: var(--mono); font-size: 15px; }
+  .score-line b { color: var(--amber); font-size: 22px; }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+  .next.milestone { border-left-color: var(--amber); }
+
+  @media (max-width: 860px) {
+    .head .wrap { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 14px; }
+    .pipe { grid-template-columns: 1fr; }
+    .pipe .arrow { transform: rotate(90deg); justify-self: center; }
+    .sevbar { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 4. MŰSZAK</span>
+  <span><a href="blokk-03.html">← 3. blokk</a> · <a href="index.html">Hálózat-őr főoldal</a> · <a href="blokk-05.html">5. blokk →</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">4. blokk · „A” modul · L1 ügyeletes szint</p>
+      <h1>Honnan jön a jel? <span>Telemetria-források</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra tervezés</span>
+        <span class="chip">Adatgyűjtési architektúra terv</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0214 · P3 · nyitott</span>
+      <p>„A múltkor a mérések UTC-ben jöttek, a napló helyi időben. Tervezzük meg rendesen: milyen adatot, honnan, hogyan gyűjtünk, és hogyan biztosítjuk, hogy egyezzenek az órák?” – rendszergazda-vezető</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Megkülönbözteted a syslog, az SNMP, a NetFlow és a folyamatos telemetria szerepét.</li>
+      <li>Egy üzemeltetési kérdéshez kiválasztod a megfelelő forrást és gyakoriságot.</li>
+      <li>Elmagyarázod, miért kell NTP, és miért tároljuk az időt UTC-ben.</li>
+      <li>Megtervezel egy gyűjtési útvonalat megőrzési és adatvédelmi döntésekkel.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy óra eligazítás, egy óra tervezés</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>Csapatok, szerepek</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Négy forrás, NTP, a gyűjtés útvonala</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>Melyik forrás?</p></div>
+      <div class="seg g"><b>45–80</b><h3>Tervezés</h3><p>Architektúra terv csapatban, közben káoszkártya</p></div>
+      <div class="seg g"><b>80–90</b><h3>Bemutatás</h3><p>Két csapat</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Eligazítás</p>
+      <h2>Négy forrás, négy kérdés</h2>
+      <p>Minden forrás másra válaszol. Egyik sem látja az egészet, ezért az ügyelet többet használ egyszerre.</p>
+    </div>
+    <div class="sources">
+      <div class="src"><span class="meta">SYSLOG · UDP/TCP 514 · push</span><span class="q">Mi történt?</span><p>Események szövegesen: belépés, hiba, leállás. A sor elején a PRI-érték kódolja a súlyosságot.</p></div>
+      <div class="src"><span class="meta">SNMP · UDP 161 / 162 · poll és trap</span><span class="q">Milyen állapotban van?</span><p>Számlálók és mérések OID-cím alapján. A trap azonnal szól. Csak a v3 titkosít.</p></div>
+      <div class="src"><span class="meta">NETFLOW / IPFIX · UDP 2055 / 4739</span><span class="q">Ki kivel beszél?</span><p>Forgalmi folyamok: honnan, hová, mennyit. A tartalmat nem látja, de személyes adat lehet.</p></div>
+      <div class="src"><span class="meta">STREAMING · gNMI · feliratkozás</span><span class="q">Mi van most?</span><p>Másodperces állapotfolyam előre megadott adatmodell szerint. Az újabb eszközök tudják.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="pri">
+  <div class="wrap">
+    <div class="grid g2" style="align-items:start;">
+      <div class="sec-head" style="margin-bottom:0;">
+        <p class="eyebrow">Próbáld ki: PRI-dekóder</p>
+        <h2>Mit jelent a &lt;187&gt;?</h2>
+        <p>A nyers syslog-sor elején álló szám két dolgot kódol: PRI = facility × 8 + súlyosság. Írj be egy értéket 0 és 191 között.</p>
+        <p class="mono" style="font-size:13px;">Próbáld: 187 · 165 · 34 · 191</p>
+      </div>
+      <div class="tool">
+        <label for="pri-in">PRI-érték</label>
+        <input id="pri-in" type="number" min="0" max="191" value="187">
+        <div class="pri-out" aria-live="polite">
+          <div class="pri-box"><b id="pri-fac">23</b><span id="pri-facname">facility: local7</span></div>
+          <div class="pri-box"><b id="pri-sev">3</b><span id="pri-sevname">súlyosság: Error</span></div>
+        </div>
+        <div class="sevbar" id="sevbar" aria-hidden="true"></div>
+        <p class="muted mono" id="pri-calc" style="font-size:13px;">187 = 23 × 8 + 3</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="ut">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">A gyűjtés útvonala</p>
+      <h2>Eszköztől a riasztásig</h2>
+      <p>Az AIOps-lánc első szeme. A tervetekben mind a négy szintet meg kell adni, és a közös időt is.</p>
+    </div>
+    <div class="pipe">
+      <div class="card"><span class="tag">01 · Forrás</span><h3>Eszközök</h3><p>Tűzfal, switchek, AP-k, szerverek</p></div><span class="arrow" aria-hidden="true">→</span>
+      <div class="card"><span class="tag">02 · Gyűjtő</span><h3>Gyűjtők</h3><p>Syslog-szerver, SNMP-lekérdező, flow-gyűjtő</p></div><span class="arrow" aria-hidden="true">→</span>
+      <div class="card"><span class="tag">03 · Tároló</span><h3>Tárolás</h3><p>Naplótár, idősoros adatbázis, megőrzési idővel</p></div><span class="arrow" aria-hidden="true">→</span>
+      <div class="card"><span class="tag">04 · Használat</span><h3>Elemzés</h3><p>Python, gépi tanulás, NOC-fal, riasztás</p></div>
+    </div>
+    <p class="ntp">NTP · UDP 123 · közös idő minden szinten · tárolás UTC-ben, megjelenítés helyi időben</p>
+  </div>
+</section>
+
+<section class="block" id="melyik">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Gyakorló · nem számít a jegybe</p>
+      <h2>Melyik forrás válaszol?</h2>
+      <p>Nyolc ügyeleti helyzet. Válaszd ki a legjobb forrást; ahol kettő is jó, a második is elfogadott.</p>
+    </div>
+    <div class="match" id="match"></div>
+    <p class="score-line" aria-live="polite">Eredmény: <b id="m-score">0</b> / <span id="m-done">0</span></p>
+  </div>
+</section>
+
+<section class="block" id="terv">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Adatgyűjtési architektúra terv · 10 pont · csapatban</p>
+      <h2>Tervezzétek meg a Bolyai Net adatgyűjtését</h2>
+      <p>A sablont az oktatótól kapjátok. Szerepek: incidensvezető, elemző, dokumentáló, kommunikátor.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:44px;">#</th><th>Rész</th><th>Mit kell megadni?</th><th style="width:60px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td><b>Kérdések</b></td><td>Három konkrét kérdés, amire az ügyeletnek gyorsan választ kell kapnia</td><td class="num">1</td></tr>
+          <tr><td class="num">2</td><td><b>Forrásmátrix</b></td><td>Kérdésenként: forrás, eszközök, gyakoriság, protokoll és port</td><td class="num">3</td></tr>
+          <tr><td class="num">3</td><td><b>Útvonalrajz</b></td><td>Eszközök → gyűjtők → tároló → elemzés, a nyilakon a protokollal</td><td class="num">2</td></tr>
+          <tr><td class="num">4</td><td><b>Közös idő</b></td><td>NTP-szerver, az ellenőrzés módja, időzóna</td><td class="num">2</td></tr>
+          <tr><td class="num">5</td><td><b>Megőrzés és védelem</b></td><td>Meddig, ki férhet hozzá, SNMPv3, a NetFlow adatvédelme, a káoszkártya döntése</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/6P5nhgEVaM6bMKGSSa9XuN">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Bónusz és otthoni gyakorló</p>
+        <h3>Jelvadász munkafüzet</h3>
+        <p class="muted">Négy küldetés Colabban: PRI-dekódolás, ki terheli a tűzfalat, SSH folyamszinten, kinek az órája jár rosszul. A linket az oktatótól kapod.</p>
+      </div>
+    </div>
+    <div class="next milestone">
+      <div>
+        <p class="eyebrow">Következő műszak · 5. blokk · 1. mérföldkő</p>
+        <h3>Zajból adat: Log audit</h3>
+        <p class="muted">Az L1 előléptetési vizsga: hibás és hiányos naplók tisztítása és anonimizálása. A 2–4. blokk tudására épül.</p>
+      </div>
+      <a class="btn" href="blokk-05.html">Vizsgainformáció →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="blokk-03.html" style="color:inherit;">← 3. blokk</a> · <a href="index.html" style="color:inherit;">Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+// PRI-dekóder
+const SEV = ['Emergency', 'Alert', 'Critical', 'Error', 'Warning', 'Notice', 'Info', 'Debug'];
+const FAC = {0:'kernel', 1:'user', 2:'mail', 3:'daemon', 4:'auth', 5:'syslog', 6:'lpr', 7:'news', 8:'uucp', 9:'cron', 10:'authpriv', 11:'ftp', 12:'ntp', 13:'log audit', 14:'log alert', 15:'clock',
+  16:'local0', 17:'local1', 18:'local2', 19:'local3', 20:'local4', 21:'local5', 22:'local6', 23:'local7'};
+const sevbar = document.getElementById('sevbar');
+SEV.forEach((s, i) => { const d = document.createElement('div'); d.className = 'sev'; d.textContent = i + ' ' + s; sevbar.appendChild(d); });
+function decode() {
+  const raw = document.getElementById('pri-in').value;
+  let p = parseInt(raw, 10);
+  const ok = Number.isInteger(p) && p >= 0 && p <= 191;
+  if (!ok) {
+    document.getElementById('pri-calc').textContent = 'A PRI 0 és 191 közötti egész szám lehet.';
+    return;
+  }
+  const f = Math.floor(p / 8), s = p % 8;
+  document.getElementById('pri-fac').textContent = f;
+  document.getElementById('pri-facname').textContent = 'facility: ' + FAC[f];
+  document.getElementById('pri-sev').textContent = s;
+  document.getElementById('pri-sevname').textContent = 'súlyosság: ' + SEV[s];
+  document.getElementById('pri-calc').textContent = p + ' = ' + f + ' × 8 + ' + s;
+  [...sevbar.children].forEach((d, i) => d.classList.toggle('on', i === s));
+}
+document.getElementById('pri-in').addEventListener('input', decode);
+decode();
+
+// Melyik forrás?
+const OPTS = ['Syslog', 'SNMP poll', 'SNMP trap', 'NetFlow', 'Streaming', 'NTP'];
+const MQ = [
+  { t: 'Melyik gép tölti le a legtöbb adatot az iskolában?', ok: ['NetFlow'], why: 'Ki kivel, mennyit: ez a folyamadat.' },
+  { t: 'Mekkora volt a tegnapi nap folyamán 5 percenként a switch CPU-terhelése?', ok: ['SNMP poll'], why: 'Rendszeres lekérdezés: így készült a 3. blokk mérési fájlja.' },
+  { t: 'Ki próbált éjjel belépni a webszerverre, és milyen felhasználónévvel?', ok: ['Syslog'], why: 'A felhasználónév csak a naplóban van; a NetFlow csak azt látja, hogy volt kapcsolat.' },
+  { t: 'Azonnal tudni akarom, ha a sw-b-02 egyik portja leáll.', ok: ['SNMP trap', 'Syslog'], why: 'Az eszköz maga szól; a poll csak a következő körben venné észre.' },
+  { t: 'Két napló ugyanarra az eseményre 7 perccel eltérő időt mutat.', ok: ['NTP'], why: 'Az egyik eszköz órája nem szinkronizál.' },
+  { t: 'Egy 20 másodperces CPU-csúcsot is el akarok kapni a tűzfalon.', ok: ['Streaming'], why: 'Az 5 perces lekérdezés átlaga elmossa a rövid csúcsot.' },
+  { t: 'Kommunikál-e valamelyik belső gép a 185.23.41.7 címmel?', ok: ['NetFlow'], why: 'A folyamrekordokban minden kapcsolat benne van, a sikeres is.' },
+  { t: 'Sikeres volt-e az éjszakai mentés?', ok: ['Syslog'], why: 'A mentőprogram naplója mondja meg, de ne higgy vakon a „completed” szónak: nézd meg a méretet is.' }
+];
+const box = document.getElementById('match');
+let score = 0, done = 0;
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+MQ.forEach((q, qi) => {
+  const d = document.createElement('div');
+  d.className = 'mq';
+  d.innerHTML = '<p class="text"><span class="mono" style="color:var(--cyan);">' + (qi + 1) + '.</span> ' + esc(q.t) + '</p><div class="choices" role="group" aria-label="Forrás választása"></div><p class="fb" aria-live="polite"></p>';
+  const ch = d.querySelector('.choices');
+  OPTS.forEach((o, oi) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'choice'; b.id = 'mq' + qi + '-' + oi; b.textContent = o;
+    b.addEventListener('click', () => {
+      const good = q.ok.includes(o);
+      ch.querySelectorAll('button').forEach(x => { x.disabled = true; if (q.ok.includes(x.textContent)) x.classList.add('ok'); });
+      if (!good) b.classList.add('miss');
+      done++; if (good) score++;
+      document.getElementById('m-score').textContent = score;
+      document.getElementById('m-done').textContent = done;
+      const fb = d.querySelector('.fb');
+      fb.innerHTML = '<b>' + (good ? 'Telitalálat.' : 'Nem egészen: ' + esc(q.ok.join(' vagy ')) + '.') + '</b> ';
+      fb.appendChild(document.createTextNode(q.why));
+    });
+    ch.appendChild(b);
+  });
+  box.appendChild(d);
+});
+</script>
+</body>
+</html>

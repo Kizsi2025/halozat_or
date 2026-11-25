@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2. blokk – Az ügyeletes zsebkése</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(44px, 7vw, 84px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); }
+  .seg.qz { border-top-color: var(--amber); }
+  .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; }
+  .seg p { font-size: 14px; color: var(--muted); }
+
+  /* naplóelemző játszótér */
+  .lab { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr); gap: 16px; align-items: start; }
+  .logbox { background: #0A131B; border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+  .logline { display: block; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid #172633; color: var(--snow); font-family: var(--mono); font-size: 13px; padding: 8px 14px; white-space: nowrap; cursor: pointer; }
+  .logline:hover { background: #12202B; }
+  .logline.sel { background: #1A2B39; box-shadow: inset 3px 0 0 var(--amber); }
+  .logline .hl { color: var(--night); background: var(--amber); border-radius: 3px; padding: 0 3px; }
+  .ctrl { display: flex; flex-direction: column; gap: 14px; }
+  .ctrl label { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .idx-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .idx-btn { font-family: var(--mono); font-size: 14px; font-weight: 700; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); cursor: pointer; }
+  .idx-btn[aria-pressed="true"] { background: var(--amber); color: var(--night); border-color: var(--amber); }
+  .parts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .part { font-family: var(--mono); font-size: 12.5px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+  .part i { font-style: normal; color: var(--amber); margin-right: 6px; }
+  .counter { font-family: var(--mono); font-size: 13.5px; background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .counter .row { display: flex; justify-content: space-between; gap: 12px; }
+  .counter .bar { height: 6px; background: var(--cyan); border-radius: 3px; }
+
+  /* kódkártyák */
+  .blades { grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr)); }
+  .blade { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; }
+  .blade-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px 0; }
+  .blade-head h3 { font-size: 20px; }
+  .blade p.note { padding: 0 18px 16px; color: var(--muted); font-size: 15px; }
+  pre.code { margin: 12px 18px; background: #0A131B; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; color: var(--snow); overflow-x: auto; }
+  pre.code .c { color: #7F93A3; }
+  pre.code .o { color: var(--amber); }
+  .copy { font-family: var(--mono); font-size: 12px; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .copy:hover { color: var(--snow); }
+
+  .q { display: flex; flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+  .q pre.code { margin: 0; }
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choice { font-family: var(--mono); font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); cursor: pointer; }
+  .choice:hover { border-color: var(--amber); }
+  .choice[disabled] { cursor: default; opacity: .55; }
+  .choice.ok { opacity: 1; border-color: var(--green); }
+  .choice.miss { opacity: 1; border-color: var(--red); }
+  .fb { font-size: 14.5px; color: var(--muted); }
+  .fb b { font-family: var(--mono); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+  .rule { border-left: 4px solid var(--amber); }
+
+  @media (max-width: 860px) {
+    .head .wrap, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 2. MŰSZAK</span>
+  <span><a href="blokk-01.html">← 1. blokk</a> · <a href="index.html">Hálózat-őr főoldal</a> · <a href="blokk-03.html">3. blokk →</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">2. blokk · „A” modul · L1 ügyeletes szint</p>
+      <h1>Az ügyeletes zsebkése: <span>Python-szkriptek</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Python-szkriptelési labor</span>
+        <span class="chip">Google-fiók kell</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0210 · P3 · nyitott</span>
+      <p>„Reggel tudni szeretném, mi történt éjjel a hálózaton. Volt valami komoly?” – igazgatóhelyettes. Csatolmány: bolyai_syslog.log, 371 sor. Határidő: a blokk vége.</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Colabban megnyitsz, futtatsz és mentesz egy munkafüzetet.</li>
+      <li>Használod a változókat, a listát, a szótárt, a for ciklust és az if feltételt.</li>
+      <li>Beolvasol egy naplót, a sorokat szavakra bontod, és Counterrel megszámolod az eseményeket.</li>
+      <li>Olyan szkriptet írsz, ami a hibás sorokon sem áll le, és a lelet alapján lezárod a hibajegyet.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>Átadási jegyzetek, a mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Colab, a naplósor felépítése, a zsebkés öt pengéje</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>Kódolvasás</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Hat küldetés párban, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Jegylezárás</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="jatszoter">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki Python nélkül</p>
+      <h2>Mit lát a <span class="mono" style="font-size:.8em;">sor.split()</span>?</h2>
+      <p>Kattints egy naplósorra, és nézd meg, milyen sorszámot kap az egyes szavak. Utána válassz egy sorszámot: a jobb oldalon az látszik, amit egy Counter a 12 mintasorból megszámolna. A számozás 0-tól indul.</p>
+    </div>
+    <div class="lab">
+      <div class="logbox" id="logbox" role="listbox" aria-label="Mintasorok a naplóból"></div>
+      <div class="ctrl">
+        <div><label>A kijelölt sor szavai (reszek):</label><div class="parts" id="parts"></div></div>
+        <div><label>Melyik szót számoljuk? reszek[…]</label>
+          <div class="idx-btns" id="idxbtns" role="group" aria-label="Sorszám választása"></div></div>
+        <div class="counter" id="counter" aria-live="polite"></div>
+        <p class="muted" style="font-size:14px;">Ugyanez a minta oldja meg a 2. és a 3. küldetést, csak a teljes, 371 soros naplón.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="pengek">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Eligazítás · a zsebkés öt pengéje</p>
+      <h2>Amit a laborhoz tudni kell</h2>
+      <p>Minden kódrészlet kimásolható, és a Colabban azonnal futtatható.</p>
+    </div>
+    <div class="grid blades">
+      <div class="blade">
+        <div class="blade-head"><h3>1 · Változók és típusok</h3><button class="copy" type="button" data-for="k1">Másolás</button></div>
+<pre class="code" id="k1">eszkoz = "web-01"        <span class="c"># str: szöveg</span>
+hibak = 72               <span class="c"># int: egész szám</span>
+eszkozok = ["fw-main", "web-01"]   <span class="c"># list</span>
+sla = {"P1": "15 perc", "P2": "1 óra"}  <span class="c"># dict</span>
+print(eszkoz, hibak, eszkozok[0], sla["P2"])
+<span class="o">→ web-01 72 fw-main 1 óra</span></pre>
+        <p class="note">A szöveg idézőjelben áll, a szám nem. A lista [ ], a szótár { }.</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>2 · Darabolás és keresés</h3><button class="copy" type="button" data-for="k2">Másolás</button></div>
+<pre class="code" id="k2">sor = "2026-11-12 02:31:44 web-01 WARNING SSHD: Failed password for root from 185.23.41.7 port 51322"
+reszek = sor.split()
+print(reszek[3])                   <span class="o">→ WARNING</span>
+print("Failed password" in sor)    <span class="o">→ True</span>
+ip = sor.split(" from ")[1].split()[0]
+print(ip)                          <span class="o">→ 185.23.41.7</span></pre>
+        <p class="note">A split(" from ") a „from” szónál vág ketté; az [1] a második fele.</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>3 · Ciklus és feltétel</h3><button class="copy" type="button" data-for="k3">Másolás</button></div>
+<pre class="code" id="k3">for sor in sorok:              <span class="c"># minden soron végig</span>
+    reszek = sor.split()
+    if reszek[3] == "ERROR":   <span class="c"># csak a hibák</span>
+        print(reszek[2], reszek[1])</pre>
+        <p class="note">A 4 szóközzel beljebb kezdett sorok tartoznak a ciklushoz. Az = értéket ad, a == összehasonlít.</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>4 · Számlálás</h3><button class="copy" type="button" data-for="k4">Másolás</button></div>
+<pre class="code" id="k4">from collections import Counter
+szamlalo = Counter()
+for e in ["web-01", "fw-main", "web-01"]:
+    szamlalo[e] += 1
+print(szamlalo.most_common(1))
+<span class="o">→ [('web-01', 2)]</span></pre>
+        <p class="note">A most_common(n) a leggyakoribb n elemet adja, csökkenő sorrendben.</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>5a · Fájlból</h3><button class="copy" type="button" data-for="k5">Másolás</button></div>
+<pre class="code" id="k5">with open("bolyai_syslog.log", encoding="utf-8") as f:
+    sorok = f.read().splitlines()   <span class="c"># soronként egy elem</span>
+print(len(sorok))</pre>
+        <p class="note">A with blokk végén a fájl magától bezárul.</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>5b · A hálózatról</h3><button class="copy" type="button" data-for="k6">Másolás</button></div>
+<pre class="code" id="k6">import ipaddress, requests
+print(ipaddress.ip_address("10.20.4.33").is_private)  <span class="o">→ True</span>
+valasz = requests.get("https://example.com", timeout=5)
+print(valasz.status_code, valasz.elapsed)</pre>
+        <p class="note">Belső vagy külső cím? És él-e egy weboldal, mennyi idő alatt válaszol?</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="kodolvasas">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Kódolvasás · nem számít a jegybe</p>
+      <h2>Mit ír ki?</h2>
+      <p>Válaszolj, mielőtt lefuttatnád. A labor előtti ellenőrzés.</p>
+    </div>
+    <div class="grid g2" id="quiz"></div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Python-szkriptelési labor · 40 perc · párban</p>
+      <h2>Hat küldetés, mindegyik egy hibajegy</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Mentsd el a saját másolatodat (Fájl › Mentés másolatként a Drive-ba), és futtasd le először a két szürke cellát.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Küldetés</th><th>Feladat</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Beolvasás</b></td><td>Olvasd be a naplót egy listába. Hány sor van?</td></tr>
+          <tr><td class="num">M2</td><td><b>Riasztási szintek</b></td><td>Hány INFO, WARNING és ERROR sor van?</td></tr>
+          <tr><td class="num">M3</td><td><b>Ki zajong a legjobban?</b></td><td>Melyik eszköz küldte a legtöbb ERROR sort?</td></tr>
+          <tr><td class="num">M4</td><td><b>Kopogtatók az ajtón</b></td><td>Melyik 3 IP-címről jött a legtöbb sikertelen belépés? Belső vagy külső?</td></tr>
+          <tr><td class="num">M5</td><td><b>Mi történt 2 és 3 óra között?</b></td><td>Hány WARNING vagy ERROR sor van? Nyomozás: mi a gond a BACKUP sorral?</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz: saját riasztó</b></td><td>Függvény, ami 20 feletti próbálkozásnál P2-es riasztást ír a jelentes.txt-be.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid g3" style="margin-top:16px;">
+      <div class="card"><span class="tag">SLA-pont küldetésenként</span><p>4 pont, ha a blokk végéig kész; 4 pont, ha az ellenőrző ✅-t ad; 2 pont, ha van magyarázó # komment.</p></div>
+      <div class="card"><span class="tag">Elakadtál?</span><p>1. Olvasd el a hibaüzenet utolsó sorát. 2. print()-tel nézd meg a változót. 3. Kérdezd a szomszéd párt, csak utána az oktatót.</p></div>
+      <div class="card rule"><span class="tag" style="color:var(--amber);">MI-asszisztens</span><p>Magyarázatot kérhetsz tőle. Kódot csak akkor használj, ha érted, és kommentben jelzed (kódex 3–5.).</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 16 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/LtPwQZgCnTpK8csehw1Hjb">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow" style="color:var(--cyan);">Következő műszak · 3. blokk</p>
+        <h3>Logvallatás: Pandas és Matplotlib</h3>
+        <p class="muted">A mai naplóból táblázat és grafikon lesz.</p>
+      </div>
+      <a class="btn ghost" href="blokk-03.html">3. blokk megnyitása →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="blokk-01.html" style="color:inherit;">← 1. blokk</a> · <a href="index.html" style="color:inherit;">Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+// Másolás gombok
+document.querySelectorAll('.copy').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const txt = document.getElementById(btn.dataset.for).innerText.split('\n').map(l => l.replace(/\s+→.*$/, '')).filter(l => !l.startsWith('→')).join('\n');
+    try { await navigator.clipboard.writeText(txt); btn.textContent = 'Kimásolva ✓'; }
+    catch (e) { btn.textContent = 'Jelöld ki és másold'; }
+    setTimeout(() => { btn.textContent = 'Másolás'; }, 1800);
+  });
+});
+
+// Naplósor-játszótér
+const LINES = [
+  "2026-11-12 00:09:09 fw-main INFO FW: Policy check passed",
+  "2026-11-12 01:52:31 web-01 WARNING SSHD: Failed password for root from 185.23.41.7 port 51322",
+  "2026-11-12 01:58:02 sw-b-02 INFO SNMP: Poll ok, CPU 14%",
+  "2026-11-12 02:04:17 web-01 WARNING SSHD: Failed password for admin from 45.155.204.19 port 48811",
+  "2026-11-12 02:11:45 dhcp-01 INFO DHCP: Lease renewed",
+  "2026-11-12 02:17:09 web-01 WARNING SSHD: Failed password for root from 185.23.41.7 port 60117",
+  "2026-11-12 06:20:40 dhcp-01 WARNING DHCP: Pool B-WIFI usage 70%",
+  "2026-11-12 08:01:57 sw-b-02 ERROR POE: Power budget exceeded on Gi0/1-12",
+  "2026-11-12 08:02:15 ap-b-04 ERROR LINK: Uplink down",
+  "2026-11-12 08:02:25 sw-b-02 ERROR LINK: Interface Gi0/4 changed state to down",
+  "2026-11-12 08:10:33 fw-main ERROR FW: CPU 91% threshold exceeded",
+  "2026-11-12 08:14:02 web-01 INFO HTTP: GET / 200"
+];
+const NAMES = ['dátum', 'idő', 'eszköz', 'szint', 'forrás'];
+let selLine = 1, selIdx = 3;
+const logbox = document.getElementById('logbox');
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function renderLab() {
+  logbox.innerHTML = '';
+  LINES.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.id = 'line-' + i;
+    b.className = 'logline' + (i === selLine ? ' sel' : '');
+    b.setAttribute('role', 'option');
+    b.setAttribute('aria-selected', i === selLine ? 'true' : 'false');
+    const w = l.split(' ');
+    b.innerHTML = w.map((x, k) => k === selIdx ? '<span class="hl">' + esc(x) + '</span>' : esc(x)).join(' ');
+    b.addEventListener('click', () => { selLine = i; renderLab(); });
+    logbox.appendChild(b);
+  });
+  const parts = LINES[selLine].split(' ');
+  document.getElementById('parts').innerHTML = parts.slice(0, 8).map((p, k) => '<span class="part"><i>[' + k + ']</i>' + esc(p) + '</span>').join('') + (parts.length > 8 ? '<span class="part"><i>…</i>még ' + (parts.length - 8) + ' szó</span>' : '');
+  const ib = document.getElementById('idxbtns');
+  ib.innerHTML = '';
+  [0,1,2,3,4].forEach(k => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'idx-btn'; b.id = 'idx-' + k;
+    b.textContent = '[' + k + '] ' + NAMES[k];
+    b.setAttribute('aria-pressed', k === selIdx ? 'true' : 'false');
+    b.addEventListener('click', () => { selIdx = k; renderLab(); });
+    ib.appendChild(b);
+  });
+  const cnt = {};
+  LINES.forEach(l => { const v = l.split(' ')[selIdx]; cnt[v] = (cnt[v] || 0) + 1; });
+  const rows = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
+  const max = rows[0][1];
+  document.getElementById('counter').innerHTML = '<span class="muted">Counter(reszek[' + selIdx + ']) a 12 mintasoron:</span>' +
+    rows.slice(0, 6).map(([k, v]) => '<div><div class="row"><span>' + esc(k) + '</span><span>' + v + '</span></div><div class="bar" style="width:' + (v / max * 100) + '%"></div></div>').join('') +
+    (rows.length > 6 ? '<span class="muted">… és még ' + (rows.length - 6) + ' különböző érték</span>' : '');
+}
+renderLab();
+
+// Kódolvasó kvíz
+const Q = [
+  { code: 'reszek = "a b c d".split()\nprint(reszek[1])', opts: ['a', 'b', 'c', 'hiba'], ok: 1, why: 'A számozás 0-tól indul, az [1] a második elem.' },
+  { code: 'print("ERROR" in "sw-b-02 ERROR LINK")', opts: ['True', 'False', 'ERROR', '1'], ok: 0, why: 'Az in azt nézi, szerepel-e a szövegben.' },
+  { code: 'n = 0\nfor x in [3, 5, 2]:\n    n += x\nprint(n)', opts: ['2', '3', '10', '352'], ok: 2, why: 'A ciklus minden elemet hozzáad: 3 + 5 + 2.' },
+  { code: 'print("02:30:19" < "03:00:00")', opts: ['True', 'False', 'hiba'], ok: 0, why: 'Az azonos formátumú időpontok szövegként is helyes sorrendben hasonlíthatók össze. Ez kell az M5-höz.' }
+];
+const quiz = document.getElementById('quiz');
+Q.forEach((q, qi) => {
+  const box = document.createElement('div');
+  box.className = 'q';
+  box.innerHTML = '<span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">' + String.fromCharCode(65 + qi) + '</span><pre class="code"></pre><div class="choices" role="group" aria-label="Válaszlehetőségek"></div><p class="fb" aria-live="polite"></p>';
+  box.querySelector('pre').textContent = q.code;
+  const ch = box.querySelector('.choices');
+  q.opts.forEach((o, oi) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'choice'; b.id = 'q' + qi + '-' + oi; b.textContent = o;
+    b.addEventListener('click', () => {
+      ch.querySelectorAll('button').forEach((x, xi) => { x.disabled = true; if (xi === q.ok) x.classList.add('ok'); });
+      if (oi !== q.ok) b.classList.add('miss');
+      const fb = box.querySelector('.fb');
+      fb.innerHTML = '<b>' + (oi === q.ok ? 'Telitalálat.' : 'Nem egészen: ' + esc(q.opts[q.ok]) + '.') + '</b> ';
+      fb.appendChild(document.createTextNode(q.why));
+    });
+    ch.appendChild(b);
+  });
+  quiz.appendChild(box);
+});
+</script>
+</body>
+</html>

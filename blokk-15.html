@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15. blokk – Beszerzési tanácsadó: gyártói ökoszisztémák · Hálózat-őr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+
+  .arch { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .arch .lay { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .arch .lay.edge { border-color: var(--amber); border-width: 2px; }
+  .arch .arr { align-self: center; font-family: var(--mono); color: var(--muted); font-size: 22px; }
+  .arch h3 { font-size: 20px; }
+  .ok { color: #5CC98A; } .no { color: var(--red); }
+
+  
+  
+  .calc { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
+  .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+  .fields label { display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; color: var(--muted); }
+  .fields input { font-family: var(--mono); font-size: 15px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+  .tbar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; background: var(--panel-2); margin: 6px 0 4px; }
+  .tbar span { display: block; height: 100%; }
+  .tleg { display: grid; gap: 6px; font-size: 14px; }
+  .tleg i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; }
+  .rk { display: grid; grid-template-columns: 120px minmax(0, 1fr) 56px; gap: 10px; align-items: center; font-size: 15px; padding: 6px 8px; border-radius: 8px; }
+  .rk.win { outline: 1px solid var(--amber); background: rgba(240,168,48,.10); }
+  .rk .bar { height: 12px; background: var(--panel-2); border-radius: 6px; overflow: hidden; }
+  .rk .bar span { display: block; height: 100%; background: var(--cyan); }
+  .rk.win .bar span { background: var(--amber); }
+  .rk b { font-family: var(--mono); text-align: right; }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .flow .st { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .flow .st.hot { border-top-color: var(--amber); }
+  .flow h3 { font-size: 18px; }
+
+  @media (max-width: 860px) {
+    .calc, .flow, .fields { grid-template-columns: 1fr; }
+    .head .wrap, .lab, .tune { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 15. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">15. blokk · „C” modul · L3 rendszermérnök</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Beszerzési tanácsadó <span>Gyártói ökoszisztémák</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Termékértékelési feladat</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0430 · P3 · nyitott</span>
+      <p>„A pályázatból lecseréljük a 12 éves wifit és switcheket. Négy gyártó adott ajánlatot, mindegyik mesterséges intelligenciás felügyelettel. Melyiket vegyük meg? Kérek egy beszerzési javaslatot, számokkal!” – igazgató</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Igényből méretezel egy iskolai hálózatot: hozzáférési pontok, switchportok, tartalék.</li>
+      <li>Kiszámolod egy ajánlat 5 éves teljes költségét (TCO), a licencdíjjal együtt.</li>
+      <li>Próbaüzem adataiból pontosságot, felidézést és F1-et számolsz, és így értékeled a gyártó AI-ját.</li>
+      <li>Súlyozott döntési mátrixszal, kockázatokkal együtt beszerzési javaslatot írsz.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Ökoszisztéma, hálózatterv, TCO, próbaüzem, mátrix, kötöttség</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Számítások és javaslat, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Két javaslat egy-egy mondatban</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="folyamat">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">A beszerzés menete</p>
+      <h2>Igény, költség, próba, döntés</h2>
+      <p>Nem egy dobozt veszünk, hanem öt év kapcsolatot egy gyártóval: eszközt, felhőt, licencet és támogatást.</p>
+    </div>
+    <div class="flow">
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">1 · IGÉNY</span><h3>Mekkora hálózat?</h3><p class="muted">egyidejű eszközök, portok, tartalék</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">2 · KÖLTSÉG</span><h3>5 éves TCO</h3><p class="muted">hardver + licenc + támogatás + áram</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">3 · PRÓBA</span><h3>Próbaüzem</h3><p class="muted">mit tud az AI a mi hálózatunkon?</p></div>
+      <div class="st hot"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">4 · DÖNTÉS</span><h3>Mátrix + kockázatok</h3><p class="muted">súlyok előre rögzítve, kötöttség külön</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="tco">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: TCO-kalkulátor</p>
+      <h2>Mennyibe kerül valójában?</h2>
+      <p>Írd be egy ajánlat adatait, és nézd meg, hogyan oszlik meg a teljes költség. Próbáld ki: mi történik, ha a hardver olcsóbb, de a licenc drágább? Az áramot a nap 24 órájára számoljuk.</p>
+    </div>
+    <div class="calc">
+      <div class="tool"><div class="fields"><label>AP-k száma<input type="number" id="cap" value="20" min="0" step="1"></label><label>switchek száma<input type="number" id="csw" value="3" min="0" step="1"></label><label>AP ára (€)<input type="number" id="pap" value="300" min="0" step="1"></label><label>switch ára (€)<input type="number" id="psw" value="1500" min="0" step="1"></label><label>licenc / eszköz / év (€)<input type="number" id="lic" value="60" min="0" step="1"></label><label>támogatás / év (€)<input type="number" id="sup" value="500" min="0" step="1"></label><label>AP fogyasztása (W)<input type="number" id="wap" value="13" min="0" step="1"></label><label>switch fogyasztása (W)<input type="number" id="wsw" value="90" min="0" step="1"></label><label>évek száma<input type="number" id="ev" value="5" min="0" step="1"></label><label>áramár (€/kWh)<input type="number" id="kwh" value="0.25" min="0" step="0.01"></label></div></div>
+      <div class="result" aria-live="polite" style="position:static;">
+        <span class="k">Teljes költség · <span id="tev"></span></span>
+        <span class="mid" id="ttot" style="font-size:30px;"></span>
+        <div class="tbar" id="tbar"></div>
+        <div class="tleg" id="tleg"></div>
+        <p class="verdict" id="tver"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="sulyozo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: súlyozó</p>
+      <h2>Ki nyer, ha máshogy súlyozunk?</h2>
+      <p>Három gyakorló ajánlat (Omega, Szigma, Kappa; kitalált adatok, nem a labor gyártói). A pontozás arányos: a legjobb 10 pontot kap. A súlyokat a program 100%-ra igazítja. Keresd meg, mikor fordul meg a sorrend!</p>
+    </div>
+    <div class="lab">
+      <div class="tool"><div class="row"><label for="wt">5 éves TCO</label><input type="range" id="wt" min="0" max="50" step="5" value="30"><output id="wto"></output></div><div class="row"><label for="wa">AI-pontosság (F1)</label><input type="range" id="wa" min="0" max="50" step="5" value="25"><output id="wao"></output></div><div class="row"><label for="wp">nyílt API, szabványok</label><input type="range" id="wp" min="0" max="50" step="5" value="20"><output id="wpo"></output></div><div class="row"><label for="ws">támogatás</label><input type="range" id="ws" min="0" max="50" step="5" value="15"><output id="wso"></output></div><div class="row"><label for="we">energia</label><input type="range" id="we" min="0" max="50" step="5" value="10"><output id="weo"></output></div>
+        <div class="table-wrap" style="margin-top:8px;"><table><thead><tr><th>Ajánlat</th><th>5 éves TCO</th><th>F1</th><th>API</th><th>Támog.</th><th>kWh/év</th></tr></thead><tbody>
+          <tr><td>Omega</td><td class="num">52 000 €</td><td class="num">0,80</td><td class="num">7</td><td class="num">8</td><td class="num">9 000</td></tr>
+          <tr><td>Szigma</td><td class="num">63 000 €</td><td class="num">0,91</td><td class="num">9</td><td class="num">9</td><td class="num">7 600</td></tr>
+          <tr><td>Kappa</td><td class="num">44 000 €</td><td class="num">0,64</td><td class="num">5</td><td class="num">4</td><td class="num">11 200</td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">Összpontszám (0–10)</span>
+        <div id="rank" style="display:grid;gap:6px;"></div>
+        <p class="verdict" id="sver"></p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:12px;">A súlyokat a valódi beszerzésben az ajánlatok megnyitása <b>előtt</b> rögzítjük. Különben bárki a kedvencéhez igazíthatná őket, ahogy itt te is.</p>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Termékértékelési feladat · 10 pont · párban</p>
+      <h2>Hat küldetés, egy beszerzési javaslat</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Minden számolós küldetés után futtasd az ellenőrzőt: <span class="mono">ellenoriz("M2", (gyarto, tco))</span>.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:72px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Bemelegítő</b></td><td>Hány AP és hány switch kell?</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>TCO</b></td><td>Melyik a legolcsóbb 5 év alatt?</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>Próbaüzem</b></td><td>Melyik AI-nak a legjobb az F1-e?</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Mátrix</b></td><td>Ki nyer a súlyozott döntési mátrixban?</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Javaslat</b></td><td>Beszerzési javaslat, kockázatokkal</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz</b></td><td>Érzékenységvizsgálat</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">A labor gyártói és árai kitaláltak. A jó javaslat számokra épül, és azt is megmondja, mi működik, ha nem fizetjük tovább a licencet.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/8QzsVQA63iaKmQsNwjff5Z">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 16. blokk · „D” modul</p>
+        <h3>Távirányítás – REST API</h3>
+        <p class="muted">Hogyan beszélgetnek a programok a hálózati eszközökkel?</p>
+      </div>
+      <a class="btn" href="blokk-16.html">Tovább a 16. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+(function () {
+  function fmt(x) { return Math.round(x).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " €"; }
+  function v(id) { return parseFloat(document.getElementById(id).value) || 0; }
+  // TCO-kalkulátor
+  var IN = ["cap", "csw", "pap", "psw", "lic", "sup", "wap", "wsw", "ev", "kwh"];
+  function tco() {
+    var ap = v("cap"), sw = v("csw"), ev = v("ev");
+    var hw = ap * v("pap") + sw * v("psw");
+    var li = (ap + sw) * v("lic") * ev;
+    var su = v("sup") * ev;
+    var en = (ap * v("wap") + sw * v("wsw")) * 24 * 365 / 1000 * v("kwh") * ev;
+    var tot = hw + li + su + en;
+    var parts = [["Hardver", hw, "#4FB3C4"], ["Licenc", li, "#F0A830"], ["Támogatás", su, "#8FA3B3"], ["Áram", en, "#5CC98A"]];
+    var bar = document.getElementById("tbar"); bar.innerHTML = "";
+    var leg = document.getElementById("tleg"); leg.innerHTML = "";
+    parts.forEach(function (p) {
+      var s = document.createElement("span"); s.style.width = (tot ? p[1] / tot * 100 : 0) + "%"; s.style.background = p[2]; s.title = p[0]; bar.appendChild(s);
+      var l = document.createElement("div"); l.innerHTML = '<i style="background:' + p[2] + '"></i>' + p[0] + ": <b>" + fmt(p[1]) + "</b> (" + (tot ? Math.round(p[1] / tot * 100) : 0) + "%)"; leg.appendChild(l);
+    });
+    document.getElementById("ttot").textContent = fmt(tot);
+    document.getElementById("tev").textContent = ev + " év";
+    var ism = tot ? (li + su + en) / tot * 100 : 0;
+    document.getElementById("tver").textContent = "Az összköltség " + Math.round(ism) + "%-a ismétlődő díj (licenc, támogatás, áram). " + (ism > 50 ? "Itt a hardver ára a kisebbik tétel!" : "Itt még a hardver a nagyobb tétel.");
+    return tot;
+  }
+  IN.forEach(function (id) { document.getElementById(id).addEventListener("input", tco); });
+  tco();
+
+  // súlyozó (gyakorló ajánlatok, nem a labor adatai)
+  var G = [["Omega", 52000, 0.80, 7, 8, 9000], ["Szigma", 63000, 0.91, 9, 9, 7600], ["Kappa", 44000, 0.64, 5, 4, 11200]];
+  var W = ["wt", "wa", "wp", "ws", "we"];
+  function suly() {
+    var w = W.map(v), sum = w.reduce(function (a, b) { return a + b; }, 0) || 1;
+    w = w.map(function (x) { return x / sum; });
+    W.forEach(function (id, i) { document.getElementById(id + "o").textContent = Math.round(w[i] * 100) + "%"; });
+    var col = function (k) { return G.map(function (g) { return g[k]; }); };
+    var mn = function (a) { return Math.min.apply(null, a); }, mx = function (a) { return Math.max.apply(null, a); };
+    var t = col(1), f = col(2), p = col(3), s = col(4), e = col(5);
+    var res = G.map(function (g, i) {
+      return { n: g[0], pont: w[0] * 10 * mn(t) / t[i] + w[1] * 10 * f[i] / mx(f) + w[2] * 10 * p[i] / mx(p) + w[3] * 10 * s[i] / mx(s) + w[4] * 10 * mn(e) / e[i] };
+    }).sort(function (a, b) { return b.pont - a.pont; });
+    var box = document.getElementById("rank"); box.innerHTML = "";
+    res.forEach(function (r, i) {
+      var d = document.createElement("div"); d.className = "rk" + (i === 0 ? " win" : "");
+      d.innerHTML = "<span>" + (i + 1) + ". " + r.n + "</span><div class=\"bar\"><span style=\"width:" + (r.pont * 10) + "%\"></span></div><b>" + r.pont.toFixed(2).replace(".", ",") + "</b>";
+      box.appendChild(d);
+    });
+    var gap = res[0].pont - res[1].pont;
+    document.getElementById("sver").textContent = "Győztes: " + res[0].n + ", " + gap.toFixed(2).replace(".", ",") + " pont előnnyel. " + (gap < 0.3 ? "Szoros! Egy kis súlyváltozás megfordíthatja: ezt a javaslatban jelezni kell." : "Ez stabilabb előny.");
+    return res;
+  }
+  W.forEach(function (id) { document.getElementById(id).addEventListener("input", suly); });
+  suly();
+})();
+
+</script>
+</body>
+</html>

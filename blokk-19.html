@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>19. blokk – Éles ügyelet: AIOps-mérnök vizsga · Hálózat-őr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+
+  .arch { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .arch .lay { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .arch .lay.edge { border-color: var(--amber); border-width: 2px; }
+  .arch .arr { align-self: center; font-family: var(--mono); color: var(--muted); font-size: 22px; }
+  .arch h3 { font-size: 20px; }
+  .ok { color: #5CC98A; } .no { color: var(--red); }
+
+  
+  
+  
+  
+  
+  
+  .hb { display: grid; grid-template-columns: 40px 50px minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; align-items: center; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 14px; }
+  .hb b { font-family: var(--mono); color: var(--cyan); }
+  .hb label { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  .hb input[type=number], .hb select, .calc2 input[type=number] { font-family: var(--mono); font-size: 14px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+  .hb input[type=number] { width: 70px; }
+  .hb select { width: 100%; min-width: 0; }
+  .hb label { min-width: 0; }
+  .hb input[type=checkbox] { accent-color: var(--amber); }
+  .calc2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .flow .st { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .flow .st.hot { border-top-color: var(--amber); }
+  .flow h3 { font-size: 18px; }
+  @media (max-width: 860px) {
+    .calc2, .flow { grid-template-columns: 1fr; }
+    .hb { grid-template-columns: 40px 1fr; }
+    .head .wrap { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 19. MŰSZAK · P1 ÉLES</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">19. blokk · 4. mérföldkő · AIOps-mérnök előléptetési vizsga</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Éles ügyelet <span>Gyakorlónap és csapatverseny</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">2 óra gyakorlat · csapatban</span>
+        <span class="chip">30 pont · szintlépés 18</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0470 · P1 · éles</span>
+      <p>„Ma ti viszitek az ügyeletet. A hálózatban a következő négy órában hibák lesznek, előre nem tudjuk, mikor és hol. Építsétek fel a teljes láncot, és tartsátok lent az észlelési és a helyreállítási időt!” – NOC-vezető</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Mi vár rátok?</p><h2>Egy szimulált ügyeleti nap, élesben</h2>
+      <p>A munkafüzet egy szimulált iskolai hálózatot indít (7 eszköz, API-val). Minden lekérdezés egy percet léptet a 240 perces napban. A hibákat az oktató juttatja be: minden csapat saját kódot kap az éles indításkor. Előtte a gyakorló környezeten bármennyit próbálkozhattok.</p></div>
+    <div class="flow">
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">1 · BEOLVASÁS</span><h3>telemetria</h3><p class="muted">percenként a 7 eszköz</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">2 · ANOMÁLIA</span><h3>alapvonal + küszöb</h3><p class="muted">eszközönként, metrikánként</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">3 · RIASZTÁS</span><h3>incidens</h3><p class="muted">egy eszköz, egy nyitott incidens</p></div>
+      <div class="st hot"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">4 · BEAVATKOZÁS</span><h3>runbook, API</h3><p class="muted">biztonsági esetben: jegy, ember dönt</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Építés, éles ügyelet, jelentés</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Eligazítás</h3><p>Szabályok, csapatok, szerepek</p></div>
+      <div class="seg g"><b>10–55</b><h3>Építés</h3><p>A lánc a gyakorló környezeten</p></div>
+      <div class="seg qz"><b>55–60</b><h3>Éles indítás</h3><p>Kódok kiosztása</p></div>
+      <div class="seg g"><b>60–80</b><h3>Jelentés</h3><p>MTTD/MTTR, napló, postmortem</p></div>
+      <div class="seg e"><b>80–90</b><h3>Zárás</h3><p>Eredménytábla, beszámolók</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="runbook">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Runbook</p><h2>Tünetből teendő</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Tünet</th><th>Teendő</th></tr></thead>
+        <tbody>
+          <tr><td>Szerver: tartósan magas CPU</td><td class="mono">ujrainditas</td></tr>
+          <tr><td>Switch: kiugró kihasználtság, egy gép okozza</td><td class="mono">sebessegkorlat (top_talker)</td></tr>
+          <tr><td>Switch: csomagvesztés</td><td class="mono">atterheles</td></tr>
+          <tr><td>Szerver: telítődő lemez</td><td class="mono">naplo_tisztitas</td></tr>
+          <tr><td>Sok sikertelen bejelentkezés</td><td><b>jegy: automatikus beavatkozás tilos</b></td></tr>
+          <tr><td>Tervezett karbantartás alatt</td><td>nincs incidens, nincs beavatkozás</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="pontszamolo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: pontszámoló</p>
+      <h2>Mennyit ér egy perc?</h2>
+      <p>Hibánként: észlelés 5 percen belül 2 pont, 10 percen belül 1 pont; helyes beavatkozás 2 pont. A hamis incidens és a felesleges beavatkozás −1 (legfeljebb −4). Állítsd be, és nézd meg, hol nyer vagy veszít egy csapat pontot.</p>
+    </div>
+    <div class="calc2" id="calc">
+      <div style="display:grid;gap:8px;">
+        <div id="hibak" style="display:grid;gap:8px;"></div>
+        <div class="hb" style="grid-template-columns:1fr 1fr;"><label>hamis incidens + felesleges beavatkozás <input type="number" id="hamis" min="0" max="20" value="0" style="width:70px;"></label>
+        <label>kézi rész (F3–F5) <input type="range" id="kezi" min="0" max="10" value="8"> <span class="mono" id="kezio"></span></label></div>
+      </div>
+      <div class="result" aria-live="polite" style="position:static;">
+        <span class="k">Automatikus rész</span><span class="mid" id="auto" style="font-size:26px;"></span>
+        <p class="muted mono" id="rows" style="font-size:12.5px;"></p>
+        <span class="k">Összesen</span><span class="mid" id="ossz" style="font-size:34px;"></span>
+        <p class="verdict" id="verd"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="szabalyok">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Szabályok</p><h2>Ami szabad, és ami nem</h2></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Szabad</th><th>Tilos</th></tr></thead>
+        <tbody><tr><td>a saját korábbi munkafüzetek, a puska, a dokumentáció, a csapattársak</td><td>MI-asszisztens, más csapat munkája, a környezet rejtett hibatervének kiolvasása, a kód többszöri indítása</td></tr></tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Szintlépés AIOps-mérnökké: legalább 18 pont, és minden csapattag rövid szóbeli beszámolója a saját szerepéről. Kiváló ügyelet: legalább 24 pont. Az eredménytábla csak csapatonkénti MTTD/MTTR-t mutat, pontszámot nem. Pótvizsga: egyéni, 60 perc.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A vizsga szabályai, a környezet, a runbook és a pontozás.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/GrWV7Ksn3JU6g3MhL76ok6">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 20. blokk</p>
+        <h3>Ki felel, ha a gép dönt? – Etika és kockázat</h3>
+        <p class="muted">Ki húzza meg a határt gép és ember között?</p>
+      </div>
+      <a class="btn" href="blokk-20.html">Tovább a 20. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+(function () {
+  var H = [["1.", "hiba"], ["2.", "hiba"], ["3.", "hiba"], ["4.", "hiba"], ["5.", "hiba"]];
+  var box = document.getElementById("hibak");
+  H.forEach(function (h, i) {
+    var d = document.createElement("div"); d.className = "hb";
+    d.innerHTML = '<b>' + h[0] + '</b><span class="muted">' + h[1] + '</span>' +
+      '<label>észlelés (perc) <input type="number" min="0" max="240" value="' + [4, 1, 0, 2, 6][i] + '" id="d' + i + '"><input type="checkbox" id="n' + i + '"> nem észlelt</label>' +
+      '<label>beavatkozás <select id="a' + i + '"><option value="2">helyes</option><option value="1">helyes, előtte egy hibás</option><option value="0">nincs, rossz, vagy tiltott automatikus</option></select></label>';
+    box.appendChild(d);
+  });
+  function szamol() {
+    var auto = 0, rows = [];
+    H.forEach(function (h, i) {
+      var nem = document.getElementById("n" + i).checked, d = +document.getElementById("d" + i).value, a = +document.getElementById("a" + i).value;
+      var pe = nem ? 0 : d <= 5 ? 2 : d <= 10 ? 1 : 0, pb = a < 0 ? 0 : a;
+      auto += pe + pb; rows.push((i + 1) + ". hiba: " + pe + " + " + pb);
+    });
+    var lev = Math.min(4, +document.getElementById("hamis").value);
+    var kezi = +document.getElementById("kezi").value;
+    var osszes = Math.max(0, auto - lev) + kezi;
+    document.getElementById("auto").textContent = Math.max(0, auto - lev) + " / 20";
+    document.getElementById("rows").textContent = rows.join(" · ") + (lev ? " · levonás −" + lev : "");
+    document.getElementById("kezio").textContent = kezi + " / 10";
+    var o = document.getElementById("ossz"); o.textContent = osszes + " / 30";
+    o.style.color = osszes >= 24 ? "#5CC98A" : osszes >= 18 ? "var(--amber)" : "var(--red)";
+    document.getElementById("verd").textContent = osszes >= 24 ? "Kiváló ügyelet: szintlépés és dicséret." : osszes >= 18 ? "Szintlépés AIOps-mérnökké (a szóbeli beszámolóval együtt)." : "Még nem elég: " + (18 - osszes) + " pont hiányzik a szintlépéshez.";
+  }
+  document.querySelectorAll("#calc input, #calc select").forEach(function (el) { el.addEventListener("input", szamol); el.addEventListener("change", szamol); });
+  document.getElementById("kezi").addEventListener("input", function () { szamol(); });
+  szamol();
+})();
+
+</script>
+</body>
+</html>

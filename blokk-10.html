@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10. blokk – P1: Támadás! IDS/IPS · L2 előléptetési vizsga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .hexbox { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .hexbox input { width: 100%; font-family: var(--mono); font-size: 15px; padding: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+  .hexout { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--amber); padding: 12px; border-radius: 8px; border: 1px dashed var(--line); min-height: 52px; word-break: break-all; }
+  .cmp .card8 p.muted { font-size: 15px; }
+  .check li { list-style: none; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .check label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .check input { accent-color: var(--amber); width: 18px; height: 18px; margin-top: 3px; }
+
+  @media (max-width: 860px) {
+    .hexbox { grid-template-columns: 1fr; }
+    .head .wrap, .tune, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 100px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot" style="color:var(--red);">●</span> BOLYAI NET · NOC · 10. MŰSZAK · P1</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow" style="color:var(--red);">10. blokk · 2. mérföldkő · L2 előléptetési vizsga</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">P1: Támadás! <span>IDS/IPS</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">Red team vs. Blue team</span>
+        <span class="chip">30 pont · szintlépés 18-tól</span>
+        <span class="chip">Kapuőr jelvény 24-től</span>
+      </div>
+    </div>
+    <div class="ticket handover" style="border-left-color:var(--red);">
+      <span class="label" style="color:var(--red);">#BN-0300 · P1 · nyitott</span>
+      <p>„Reggel ismeretlen munkamenetet találtam a srv-01 admin felületén. Mi történt az éjjel? Kit kell kitiltani?” – rendszergazda</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A vizsgán ezt mutatod meg</p><h2>Négy dolog, amit egy L3 rendszermérnök tud</h2></div>
+    <ol class="goals">
+      <li>Aláírás-alapú szabályt írsz naplóra, és megkülönbözteted a támadót a legitim forgalomtól.</li>
+      <li>Észreveszed, ha a támadás sikerült, és tudod, mi történt utána.</li>
+      <li>Anomáliadetektálással megtalálod azt, amit egyik szabály sem fog meg.</li>
+      <li>Megalapozott IPS-döntést hozol, és hibáztatásmentes postmortemet írsz.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Eligazítás, bemelegítő, vizsga</h2></div>
+    <div class="timeline" style="grid-template-columns:9fr 15fr 15fr 55fr;">
+      <div class="seg e"><b>0–5</b><h3>Átadás</h3><p>A P1 jegy</p></div>
+      <div class="seg e"><b>5–20</b><h3>Eligazítás</h3><p>IDS vs. IPS, módszerek, architektúra</p></div>
+      <div class="seg qz"><b>20–35</b><h3>Red vs. Blue</h3><p>Bemelegítő csapatban</p></div>
+      <div class="seg g"><b>35–90</b><h3>Vizsga</h3><p>Egyéni Blue team elemzés, 30 pont, közben káoszkártya</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="ids-ips">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">IDS vs. IPS</p>
+      <h2>Az egyik jelez, a másik közbelép</h2>
+      <p>Mindkettő ugyanazokkal a módszerekkel dolgozik: aláírással (ismert minta) vagy anomáliával (eltérés a megszokottól). A különbség az, hogy mit tesz a találattal.</p>
+    </div>
+    <div class="cmp">
+      <div class="card8"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">IDS · BEHATOLÁSÉSZLELŐ</span><span class="num8" style="font-size:28px;">riaszt</span><p class="muted">A forgalom másolatát figyeli. Nem lassít, de nem is állít meg semmit.</p></div>
+      <div class="card8 hot"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">IPS · BEHATOLÁSMEGELŐZŐ</span><span class="num8" style="font-size:28px;">blokkol</span><p class="muted">A forgalom útjában ül. Ha téved, legitim forgalmat állít meg.</p></div>
+      <div class="card8"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">ALÁÍRÁS</span><span class="num8" style="font-size:28px;">ismert minta</span><p class="muted">Pontos, könnyen magyarázható, de az új vagy csendes támadásra vak.</p></div>
+      <div class="card8"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">ANOMÁLIA</span><span class="num8" style="font-size:28px;">eltérés</span><p class="muted">Az ismeretlent is látja (7. blokk), de több a hamis riasztás.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="ips">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: IPS-szabály hangolása</p>
+      <h2>Hány hibás jelszó után tiltsunk ki valakit?</h2>
+      <p>Gyakorló forgatókönyv (nem a vizsga adata): a 203.0.113.50 támadó 7 másodpercenként próbálkozik, és a 140. próbálkozásra kitalálja a jelszót. A rendszergazda néha elgépeli a jelszavát: legfeljebb 2-szer egymás után. Állítsd be az IPS-t, és nézd meg, mi történik.</p>
+    </div>
+    <div class="lab">
+      <div class="tool">
+        <div class="row"><label for="n">tiltás ennyi hiba után</label><input type="range" id="n" min="1" max="200" step="1" value="200"><output id="no"></output></div>
+        <div class="toggle" role="group" aria-label="Üzemmód">
+          <button type="button" id="m-ids" aria-pressed="true">IDS: csak riaszt</button>
+          <button type="button" id="m-ips" aria-pressed="false">IPS: blokkol</button>
+        </div>
+        <svg class="chart" id="tl" viewBox="0 0 760 170" role="img" aria-label="Idővonal: a támadó próbálkozásai, a tiltás és a sikeres belépés időpontja"></svg>
+        <div class="legend"><span><i style="background:#5A6B78"></i>sikertelen próba</span><span><i style="background:#F0A830"></i>riasztás / tiltás</span><span><i style="background:#F26B5B"></i>a támadó bejut</span></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">A támadó</span>
+        <span class="big" id="r1"></span>
+        <span class="k">A rendszergazda</span>
+        <span class="mid" id="r2"></span>
+        <p class="verdict" id="r3"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="hex">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: zászlóvadász</p>
+      <h2>Mi van a hexadecimális kód mögött?</h2>
+      <p>A mini-CTF egyik zászlója kódolva rejtőzik: minden karakter két hexadecimális jegy. Írj be egy hex szöveget, és nézd meg, mi lesz belőle. Pythonban ugyanez: <span class="mono">bytes.fromhex("…").decode()</span>.</p>
+    </div>
+    <div class="tool">
+      <div class="hexbox">
+        <input id="hx" value="424e7b6779616b6f726c6f5f7a61737a6c6f7d" aria-label="Hexadecimális szöveg" spellcheck="false">
+        <div class="hexout" id="hxo" aria-live="polite"></div>
+      </div>
+      <p class="note">Próbáld ki: <span class="mono">48656c6c6f</span> · <span class="mono">426f6c796169</span> · és a saját neved hexben: <span class="mono" id="sajat"></span></p>
+      <div class="row"><label for="nev">saját szöveg →</label><input id="nev" value="Kapuor" aria-label="Saját szöveg hexre" style="font-family:var(--mono);padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--snow);"><output></output></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="vizsga">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">A vizsga · egyéni · 55 perc · 30 pont</p>
+      <h2>Hét feladat a Kék csapat elemzőjének</h2>
+      <p>A vizsgafüzetet és a bemelegítő füzetet az oktatótól kapod. Használható: a saját korábbi munkafüzeteid, a puskák és a dokumentáció. Nem használható: MI-asszisztens és mások munkája.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Feladat</th><th>Amit tudnod kell hozzá</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">F1</td><td><b>Beolvasás, áttekintés</b></td><td>read_csv, value_counts (3–5. blokk)</td><td class="num">3</td></tr>
+          <tr><td class="num">F2</td><td><b>Portszkennelés</b></td><td>dt.floor, groupby, nunique; legitim forrás felismerése</td><td class="num">5</td></tr>
+          <tr><td class="num">F3</td><td><b>Jelszópróbálgatás</b></td><td>sikertelen és sikeres belépések, időrend</td><td class="num">5</td></tr>
+          <tr><td class="num">F4</td><td><b>A csendes támadás</b></td><td>profil + Isolation Forest (7. blokk)</td><td class="num">5</td></tr>
+          <tr><td class="num">F5</td><td><b>IPS-döntés</b></td><td>blokkolás, karantén, fehérlista (8. blokk)</td><td class="num">4</td></tr>
+          <tr><td class="num">F6</td><td><b>Zászlók</b></td><td>str.contains, bytes.fromhex</td><td class="num">3</td></tr>
+          <tr><td class="num">F7</td><td><b>Postmortem</b></td><td>hibáztatásmentes szerkezet (5. blokk)</td><td class="num">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Szintlépés L3 rendszermérnökké: legalább 18 pont · Kapuőr jelvény: legalább 24 pont · Pótvizsga: egyszer, másik naplóval. Etika: csak a kapott, generált naplóval dolgozunk. Más rendszerét engedély nélkül szkennelni vagy támadni bűncselekmény.</p>
+  </div>
+</section>
+
+<section class="block" id="kesz">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Ellenőrzőlista</p><h2>Készen állsz?</h2></div>
+    <ul class="check" style="padding:0;">
+      <li><label><input type="checkbox">Meg tudom írni a groupby + nunique szabályt percenkénti bontásban.</label></li>
+      <li><label><input type="checkbox">Tudom, hogyan nézem meg, hogy egy forrás végül bejutott-e (LOGIN_OK).</label></li>
+      <li><label><input type="checkbox">Le tudok futtatni egy Isolation Forestet forrásonkénti profilon (7. blokk füzete kéznél van).</label></li>
+      <li><label><input type="checkbox">Tudom, miért nem blokkolunk egy belső, ütemezett vizsgálót.</label></li>
+      <li><label><input type="checkbox">A hexadecimális visszafejtést kipróbáltam fent.</label></li>
+      <li><label><input type="checkbox">Ismerem a postmortem hat részét, és nem hibáztatok senkit.</label></li>
+    </ul>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/E1jDR33EpcDr8MvPJfMtTY">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 11. blokk · „C” modul</p>
+        <h3>Az eltűnt mentés rejtélye</h3>
+        <p class="muted">L3 rendszermérnökként: backup-folyamatok monitorozása és anomáliadetektálás archiválási adatokon.</p>
+      </div>
+      <a class="btn" href="blokk-11.html">Tovább a 11. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+// IPS-hangoló (gyakorló forgatókönyv, nem a vizsga adata)
+const SIKER = 140, LEPES = 7; let ips = false;
+function hangol() {
+  const n = +document.getElementById('n').value;
+  document.getElementById('no').textContent = n + ' hiba';
+  const tilt = n <= SIKER;              // a tiltás a sikeres próba előtt jön?
+  const admin = n <= 2;                 // a rendszergazda 2 elgépelése is kiváltja?
+  const r1 = document.getElementById('r1'), r2 = document.getElementById('r2'), r3 = document.getElementById('r3');
+  if (!ips) {
+    r1.textContent = 'bejut'; r1.style.color = 'var(--red)';
+    r3.textContent = n <= SIKER ? `Az IDS a ${n}. hibánál riaszt (${Math.round(n * LEPES / 60)} perc után), de nem állítja meg: a támadó a ${SIKER}. próbával bejut. Valakinek reagálnia kellene, éjjel is.` : 'A riasztás a sikeres belépés után jönne, ha egyáltalán: az IDS ezzel a küszöbbel semmit nem ér.';
+  } else {
+    r1.textContent = tilt ? 'kitiltva' : 'bejut'; r1.style.color = tilt ? 'var(--amber)' : 'var(--red)';
+    r3.textContent = tilt ? (admin ? 'A támadó kint marad, de a rendszergazda is kizárja magát egy elgépelés után. Túl szigorú!' : `Az IPS a ${n}. hibánál tilt, ${SIKER - n} próbával a siker előtt. A rendszergazda elgépelései nem váltják ki.`) : 'A küszöb túl magas: a támadó előbb jut be, mint hogy az IPS közbelépne.';
+  }
+  r2.textContent = ips && admin ? 'kizárva ✗' : 'rendben ✓';
+  r2.style.color = ips && admin ? 'var(--red)' : 'var(--snow)';
+  // idővonal
+  const X0 = 30, X1 = 730, x = i => X0 + (X1 - X0) * i / 200;
+  let s = `<line x1="${X0}" x2="${X1}" y1="95" y2="95" stroke="#2A3C4B" stroke-width="2"/>`;
+  const veg = ips && tilt ? n : SIKER;
+  for (let i = 1; i <= veg; i++) s += `<rect x="${x(i) - 1}" y="70" width="2" height="50" fill="#5A6B78"/>`;
+  s += `<line x1="${x(SIKER)}" x2="${x(SIKER)}" y1="30" y2="150" stroke="#F26B5B" stroke-width="3" ${ips && tilt ? 'stroke-dasharray="6 6" opacity=".5"' : ''}/>`;
+  s += `<text x="${x(SIKER) + 6}" y="40" fill="#F26B5B" font-size="13" font-family="JetBrains Mono, monospace">${ips && tilt ? 'itt jutott volna be' : 'bejut'}</text>`;
+  if (n <= 200) s += `<line x1="${x(n)}" x2="${x(n)}" y1="30" y2="150" stroke="#F0A830" stroke-width="3"/><text x="${Math.max(X0, x(n) - 6)}" y="165" fill="#F0A830" font-size="13" text-anchor="${n > 100 ? 'end' : 'start'}" font-family="JetBrains Mono, monospace">${ips ? 'tiltás' : 'riasztás'}</text>`;
+  document.getElementById('tl').innerHTML = s;
+}
+function setM(v) { ips = v; document.getElementById('m-ids').setAttribute('aria-pressed', !v); document.getElementById('m-ips').setAttribute('aria-pressed', v); hangol(); }
+document.getElementById('m-ids').addEventListener('click', () => setM(false));
+document.getElementById('m-ips').addEventListener('click', () => setM(true));
+document.getElementById('n').addEventListener('input', hangol);
+hangol();
+
+// hex
+function hex() {
+  const h = document.getElementById('hx').value.trim().replace(/\s+/g, '');
+  const o = document.getElementById('hxo');
+  if (!/^([0-9a-fA-F]{2})*$/.test(h)) { o.textContent = 'ValueError: ez nem hexadecimális szöveg'; o.style.color = 'var(--red)'; return; }
+  try { o.textContent = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array((h.match(/../g) || []).map(x => parseInt(x, 16)))); o.style.color = 'var(--amber)'; }
+  catch (e) { o.textContent = 'UnicodeDecodeError: nem értelmes szöveg'; o.style.color = 'var(--red)'; }
+}
+function sajat() {
+  document.getElementById('sajat').textContent = Array.from(new TextEncoder().encode(document.getElementById('nev').value)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+document.getElementById('hx').addEventListener('input', hex);
+document.getElementById('nev').addEventListener('input', sajat);
+hex(); sajat();
+</script>
+</body>
+</html>

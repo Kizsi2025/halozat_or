@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>11. blokk – Az eltűnt mentés rejtélye</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+  @media (max-width: 860px) {
+    .r321 { grid-template-columns: 1fr; }
+    .strip { gap: 1px; }
+    .head .wrap, .tune, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 100px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 11. MŰSZAK · L3</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">11. blokk · „C” modul · L3 rendszermérnök</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Az eltűnt mentés <span>rejtélye</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Archiválási anomáliateszt</span>
+        <span class="chip">Mentőangyal jelvény</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0310 · P2 · nyitott</span>
+      <p>„A mentőprogram két hónapja minden reggel zöld pipát mutat. Az auditor mégis azt kérdezi: biztos, hogy minden adatunk vissza is állítható?” – igazgatóhelyettes</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Elmagyarázod, miért nem bizonyíték a mentőprogram „OK” állapota.</li>
+      <li>Megtalálod az elmaradt futásokat és a csendes hibát a mentési naplóban.</li>
+      <li>Trendből kiszámolod, mikor fut túl egy mentés az ablakon.</li>
+      <li>A 3-2-1 szabály szerint értékelsz egy mentési tervet, és tudod, mi az RPO és az RTO.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>A zöld pipa, három rejtély, 3-2-1</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Archiválási anomáliateszt párban, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Jelentés az auditornak</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="figyelo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: mentésfigyelő</p>
+      <h2>Mit lát a monitorozás, és mit nem?</h2>
+      <p>A labor valódi naplója: 10 mentési feladat, 58 nap (szept. 21. – nov. 17.). Egy négyzet egy nap. Kapcsold be egyenként a figyelési szabályokat, és nézd meg, mi bukkan elő a zöld mögül.</p>
+    </div>
+    <div class="lab">
+      <div class="tool">
+        <div class="jobs" id="jobs" role="group" aria-label="Mentési feladat"></div>
+        <div class="strip" id="strip" role="img" aria-label="A kiválasztott feladat 58 napja"></div>
+        <svg class="chart" id="size" viewBox="0 0 760 170" role="img" aria-label="A kiválasztott feladat napi mentési mérete"></svg>
+        <div class="opt">
+          <label><input type="checkbox" checked disabled> Állapot: FAIL-sorok (ez mindig be van kapcsolva)</label>
+          <label><input type="checkbox" id="o-miss"> Hiányzó futás: elvárt nap, amikor nincs OK</label>
+          <label><input type="checkbox" id="o-size"> Méret: |z| &gt; 5 az első 30 nap alapvonalához képest</label>
+        </div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">Ennyi baj látszik</span>
+        <span class="big" id="cnt"></span>
+        <span class="k">Ebből</span>
+        <span class="mid" id="det" style="font-size:15px;line-height:1.6;"></span>
+        <p class="verdict" id="v11"></p>
+      </div>
+    </div>
+    <div class="legend" style="margin-top:12px;"><span><i style="background:#2E7D5B;height:12px;"></i>OK</span><span><i style="background:linear-gradient(#F26B5B 50%,#2E7D5B 50%);height:12px;"></i>FAIL, majd sikeres újrapróbálás</span><span><i style="background:var(--red);height:12px;"></i>OK, de rossz méret</span><span><i style="border:1px dashed var(--red);height:10px;"></i>nem futott le</span></div>
+  </div>
+</section>
+
+<section class="block" id="szabaly">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: 3-2-1 ellenőrző</p>
+      <h2>Kibírja-e a mentésed a rosszabb napokat?</h2>
+      <p>Állítsd be egy mentés tulajdonságait, és nézd meg, melyik katasztrófát éli túl.</p>
+    </div>
+    <div class="r321">
+      <div class="cell"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">MÁSOLATOK (az eredetivel együtt)</span><input type="number" id="c" min="1" max="5" value="2" aria-label="Másolatok száma"><span class="big" id="c3"></span></div>
+      <div class="cell"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">ADATHORDOZÓ-FAJTÁK</span><select id="m" aria-label="Adathordozók"><option value="1">csak lemez</option><option value="2">lemez + szalag</option><option value="2f">lemez + felhő</option></select><span class="big" id="m2"></span></div>
+      <div class="cell"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">TELEPHELYEN KÍVÜLI PÉLDÁNY</span><select id="o" aria-label="Telephelyen kívül"><option value="0">nincs</option><option value="1">van</option></select><span class="big" id="o1"></span></div>
+    </div>
+    <div class="table-wrap" style="margin-top:16px;">
+      <table>
+        <thead><tr><th>Mi történik?</th><th style="width:160px;">Túléli?</th></tr></thead>
+        <tbody id="kat"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Archiválási anomáliateszt · 10 pont · párban</p>
+      <h2>Három rejtély, egy visszaállítás</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Minden küldetés után futtasd az ellenőrzőt: <span class="mono">ellenoriz("M2", valasz)</span>.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Áttekintés</b></td><td>Hány FAIL van, és baj-e?</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>1. rejtély</b></td><td>Melyik feladat nem futott le, és mikor?</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>2. rejtély</b></td><td>A csendes hiba első napja</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>3. rejtély</b></td><td>Mikor fut túl a mentés az ablakon?</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>3-2-1</b></td><td>Hány feladat sérti a szabályt?</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz</b></td><td>Miért nem látja az Isolation Forest?</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Mentőangyal jelvény: mindhárom rejtélyt megtalálod, és a káoszkártyánál a helyes visszaállítási pontot adod meg, indoklással.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/CgVSRVwtoysi6EMv2nMFqy">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next milestone">
+      <div>
+        <p class="eyebrow">Következő műszak · 12. blokk · 3. mérföldkő</p>
+        <h3>Elszálló felhőszámla</h3>
+        <p class="muted">L3 előléptetési vizsga: prediktív felhőmonitoring és kimutatható költségmegtakarítás.</p>
+      </div>
+      <a class="btn" href="blokk-12.html">Tovább a 12. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const O = {"dc-ad":[[19.65,0],[20.19,0],[19.7,0],[20.66,0],[19.61,0],[19.72,0],[20.03,0],[20.18,0],[19.84,0],[19.9,0],[20.52,0],[20.1,0],[19.82,0],[20.21,0],[20.41,0],[20.07,0],[19.74,1],[20.24,0],[20.15,0],[19.9,0],[20.01,0],[20.13,0],[20.15,0],[19.77,0],[19.5,0],[19.7,0],[20.17,0],[20.09,0],[20.25,0],[20.15,0],[20.02,0],[19.81,0],[20.28,0],[20.56,0],[19.94,0],[20.27,0],[19.94,0],[19.92,0],[20.05,0],[20.07,0],[19.84,0],[19.8,1],[20.33,0],[20.14,0],[19.67,0],[19.39,0],[20.4,0],[19.99,0],[20.21,0],[20.48,0],[19.68,0],[20.27,0],[19.9,0],[20.14,0],[20.12,0],[20.21,0],[20.14,0],[20.06,0]],"e-naplo-db":[[8.02,0],[7.99,0],[8.05,0],[8.15,0],[8.0,0],[8.02,0],[8.08,0],[8.04,0],[8.07,0],[8.03,0],[8.1,0],[8.05,0],[7.98,0],[8.01,0],[8.26,0],[7.94,0],[8.11,0],[8.12,0],[8.15,0],[8.17,1],[8.22,0],[8.2,0],[8.35,1],[8.17,0],[8.27,0],[8.39,0],[8.37,0],[8.23,0],[8.23,0],[8.15,0],[8.36,0],[8.29,0],[8.17,0],[8.52,0],[8.24,0],[8.34,0],[8.46,0],[8.36,0],[8.24,0],[8.41,0],[8.24,0],[8.46,0],[8.38,0],[8.38,0],[8.51,0],[8.53,0],[null,0],[null,0],[null,0],[null,0],[null,0],[8.47,0],[8.57,0],[8.61,0],[8.52,0],[8.68,0],[8.59,0],[8.52,1]],"halozati-konfig":[[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0],[0.05,0]],"hr-dokumentum":[[6.18,0],[6.02,0],[5.91,0],[6.02,0],[6.11,0],[6.14,0],[6.0,0],[6.16,0],[5.98,0],[5.94,0],[6.12,0],[6.14,0],[6.01,0],[6.11,0],[6.08,0],[6.19,0],[6.2,0],[6.13,0],[6.13,0],[6.23,0],[6.27,0],[6.2,0],[6.31,0],[6.39,0],[6.35,0],[6.25,0],[6.18,0],[6.28,0],[6.37,0],[6.19,0],[6.21,0],[6.32,0],[6.32,0],[6.35,0],[6.15,0],[6.33,0],[6.3,0],[6.44,0],[6.39,0],[6.43,0],[6.37,0],[6.56,0],[6.28,0],[6.51,1],[6.32,0],[6.49,0],[6.41,0],[6.41,0],[6.42,0],[6.46,0],[6.31,0],[6.56,0],[6.67,0],[6.46,0],[6.66,1],[6.63,0],[6.6,0],[6.59,0]],"kamera-nvr":[[294.06,0],[300.23,0],[299.29,0],[298.75,0],[304.92,0],[300.06,0],[295.4,0],[300.84,0],[294.71,0],[300.18,0],[302.08,0],[306.47,0],[294.51,0],[299.38,0],[297.02,0],[301.69,0],[300.91,0],[302.48,0],[301.93,0],[299.69,0],[299.01,0],[291.32,0],[304.62,0],[290.05,0],[303.97,0],[299.66,0],[294.68,0],[299.06,0],[299.47,0],[299.77,0],[298.6,0],[303.71,0],[301.11,0],[305.37,0],[293.89,0],[302.03,0],[306.1,0],[299.86,0],[302.75,0],[303.64,0],[297.78,0],[304.38,0],[303.7,0],[298.91,0],[294.66,0],[303.36,0],[292.4,0],[300.04,0],[299.66,0],[302.69,0],[294.81,0],[294.73,0],[303.78,0],[303.37,0],[299.58,0],[301.33,1],[304.29,0],[307.24,0]],"mail":[[38.9,0],[39.51,0],[39.77,0],[40.0,0],[40.48,0],[40.26,0],[40.09,0],[39.24,0],[40.28,0],[40.34,0],[40.1,0],[41.14,0],[40.7,0],[40.99,0],[39.63,0],[39.99,0],[41.52,0],[40.74,0],[40.72,0],[40.57,0],[40.35,0],[41.21,0],[41.69,0],[41.47,0],[41.96,0],[40.9,0],[42.62,0],[41.46,0],[41.92,0],[41.11,0],[41.27,0],[42.11,0],[41.42,0],[42.59,0],[41.53,0],[40.92,0],[41.64,0],[42.0,0],[41.27,0],[40.61,0],[41.99,0],[41.96,0],[41.75,0],[41.91,1],[41.8,1],[41.53,0],[41.79,0],[41.87,0],[42.67,0],[43.79,0],[42.33,0],[42.27,0],[43.3,0],[42.58,0],[42.94,0],[42.83,0],[42.64,0],[43.56,0]],"moodle-db":[[14.81,0],[14.95,0],[14.77,0],[15.0,0],[15.14,1],[14.98,0],[15.35,1],[15.07,0],[15.08,0],[15.28,0],[15.2,0],[15.37,0],[15.38,0],[15.39,0],[15.09,0],[14.87,0],[15.05,0],[15.13,0],[15.69,0],[15.42,0],[15.37,0],[15.03,0],[15.21,0],[15.29,0],[15.43,0],[14.96,0],[15.31,0],[15.74,0],[15.75,0],[15.36,0],[15.54,0],[15.9,1],[15.85,0],[16.13,0],[15.59,0],[16.05,0],[15.44,0],[16.02,0],[15.38,0],[15.77,0],[16.02,0],[16.2,0],[16.17,0],[15.16,0],[15.88,0],[16.02,0],[15.64,0],[15.76,0],[15.87,0],[16.01,0],[16.01,0],[16.1,0],[16.17,0],[16.29,0],[16.07,0],[15.75,0],[16.23,0],[16.37,0]],"nas-archiv":[[402.79,0],[424.16,0],[403.93,0],[411.02,0],[413.78,0],[422.76,0],[418.91,0],[410.46,0],[408.39,0],[408.86,0],[423.26,0],[420.5,0],[416.22,0],[415.48,0],[423.19,0],[423.45,0],[417.37,0],[418.92,0],[409.01,0],[418.67,0],[418.99,0],[421.59,1],[429.55,0],[418.92,0],[416.75,0],[417.25,0],[405.95,0],[413.05,0],[414.05,0],[435.79,0],[415.09,0],[417.94,0],[426.95,0],[414.81,0],[423.44,0],[411.55,0],[417.4,0],[421.92,0],[422.58,0],[425.71,0],[423.58,0],[432.19,0],[423.76,0],[425.77,0],[417.99,0],[423.62,0],[423.09,0],[422.19,0],[429.34,0],[424.06,0],[430.9,0],[424.93,0],[427.57,0],[429.18,0],[425.04,0],[425.77,0],[422.78,0],[420.58,0]],"srv-file-full":[[122.54,0],[120.65,0],[121.9,0],[122.54,0],[120.58,0],[118.87,0],[119.28,0],[121.43,0],[121.33,0],[119.75,0],[122.02,0],[119.86,0],[121.26,0],[122.41,0],[121.97,0],[120.07,0],[120.44,0],[120.19,0],[122.1,0],[120.81,0],[121.46,0],[120.64,0],[126.11,0],[121.25,0],[117.12,0],[121.3,0],[120.48,0],[117.88,0],[121.91,0],[122.18,0],[120.15,0],[119.59,0],[118.3,0],[121.82,0],[123.59,0],[121.78,0],[121.42,0],[122.8,0],[124.43,0],[123.38,0],[123.33,0],[121.61,0],[122.72,0],[0.39,0],[0.42,0],[0.38,0],[0.38,0],[0.4,0],[0.43,0],[0.39,0],[0.4,0],[0.4,0],[0.44,0],[0.4,0],[0.37,0],[0.4,0],[0.41,0],[0.41,0]],"web":[[2.01,0],[2.02,0],[2.0,0],[1.98,0],[2.06,0],[1.97,0],[2.05,0],[1.97,0],[2.04,0],[2.0,0],[1.98,1],[2.0,0],[1.99,0],[1.99,0],[2.02,0],[2.02,0],[1.95,0],[1.94,0],[1.98,0],[1.98,0],[2.04,0],[2.03,0],[1.99,0],[1.95,0],[1.96,0],[1.98,0],[1.99,0],[2.01,0],[1.95,0],[2.04,0],[2.03,0],[2.04,0],[1.99,0],[1.99,0],[2.03,0],[1.98,0],[1.99,1],[2.03,0],[1.99,0],[2.0,0],[2.03,0],[1.99,0],[1.98,0],[1.98,0],[2.01,0],[2.03,0],[2.0,0],[1.97,0],[1.97,0],[2.01,0],[2.0,0],[1.98,0],[1.96,0],[1.99,0],[1.95,0],[1.99,0],[1.95,0],[2.01,0]]};
+const START = Date.UTC(2026, 8, 21);
+const nap = i => { const d = new Date(START + i * 864e5); return (d.getUTCMonth() + 1) + '.' + String(d.getUTCDate()).padStart(2, '0') + '.'; };
+let job = 'srv-file-full';
+const jobsEl = document.getElementById('jobs');
+Object.keys(O).forEach(k => { const b = document.createElement('button'); b.type = 'button'; b.textContent = k; b.dataset.k = k; b.addEventListener('click', () => { job = k; draw(); }); jobsEl.appendChild(b); });
+function stats(k) {
+  const v = O[k], base = v.slice(0, 30).map(x => x[0]).filter(x => x !== null);
+  const m = base.reduce((a, b) => a + b, 0) / base.length, sd = Math.sqrt(base.reduce((a, b) => a + (b - m) ** 2, 0) / (base.length - 1));
+  return v.map(([s, f]) => ({ s, f, miss: s === null, bad: s !== null && Math.abs((s - m) / sd) > 5 }));
+}
+function draw() {
+  const miss = document.getElementById('o-miss').checked, size = document.getElementById('o-size').checked;
+  jobsEl.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === job));
+  const st = stats(job);
+  document.getElementById('strip').innerHTML = st.map((d, i) => {
+    let c = d.f ? 'fail' : '';
+    if (d.miss) c = miss ? 'miss' : 'hid';
+    if (d.bad && size) c = 'bad';
+    return `<span class="${c}" title="${nap(i)} ${d.miss ? 'nincs futás' : d.s + ' GB'}${d.f ? ' · FAIL + újrapróbálás' : ''}"></span>`;
+  }).join('');
+  // összes feladat
+  let fail = 0, ms = 0, bd = 0, jobsHit = new Set();
+  for (const k of Object.keys(O)) stats(k).forEach(d => { if (d.f) fail++; if (d.miss && miss) { ms++; jobsHit.add(k); } if (d.bad && size) { bd++; jobsHit.add(k); } });
+  document.getElementById('cnt').textContent = (ms + bd) ? (ms + bd) + ' nap' : '0 nap';
+  document.getElementById('det').innerHTML = `${fail} FAIL (mind sikeres újrapróbálással)<br>${miss ? ms + ' elmaradt futás' : 'elmaradt futás: nem figyeljük'}<br>${size ? bd + ' rossz méretű mentés' : 'méret: nem figyeljük'}`;
+  document.getElementById('v11').textContent = !miss && !size ? 'Csak az állapotot figyeljük: minden zöld, a hibák mind újrapróbálással rendeződtek. Az auditor erre azt mondaná: ez nem bizonyíték.'
+    : (miss && size ? 'Most már látszik: ' + [...jobsHit].join(' és ') + '. Ez kettő a három rejtélyből. A harmadik nem egy nap hibája, hanem egy trend: azt a futásidőben kell keresni.' : 'Kapcsold be a másik szabályt is!');
+  // méretgrafikon
+  const vals = st.map(d => d.s), mx = Math.max(...vals.filter(x => x !== null)) * 1.1 || 1;
+  const X0 = 10, X1 = 750, Y0 = 160, Y1 = 10, x = i => X0 + (X1 - X0) * i / 57, y = v => Y0 - (Y0 - Y1) * v / mx;
+  let s = '';
+  st.forEach((d, i) => { if (d.s !== null) s += `<rect x="${x(i) - 5}" y="${y(d.s)}" width="10" height="${Y0 - y(d.s)}" fill="${d.bad && size ? '#F26B5B' : '#4CC3D9'}" opacity=".85"/>`; else if (miss) s += `<rect x="${x(i) - 5}" y="${Y1}" width="10" height="${Y0 - Y1}" fill="none" stroke="#F26B5B" stroke-dasharray="3 3"/>`; });
+  s += `<text x="${X1}" y="${Y1 + 12}" fill="#8FA3B3" font-size="12" text-anchor="end" font-family="JetBrains Mono, monospace">${job} · méret (GB), max ${(mx / 1.1).toFixed(1)}</text>`;
+  document.getElementById('size').innerHTML = s;
+}
+['o-miss', 'o-size'].forEach(i => document.getElementById(i).addEventListener('change', draw));
+draw();
+
+// 3-2-1
+const KAT = [
+  ['A szerver lemeze tönkremegy', (c, m, o) => c >= 2],
+  ['A mentőlemez is hibás lesz ugyanabban a hónapban', (c, m, o) => c >= 3],
+  ['Egy hibás meghajtótípus-széria minden lemezt érint', (c, m, o) => m !== '1'],
+  ['Tűz vagy beázás a szerverteremben', (c, m, o) => o === '1'],
+  ['Zsarolóvírus titkosít mindent, amit a hálózaton elér', (c, m, o) => o === '1' && m !== '1'],
+];
+function r321() {
+  const c = +document.getElementById('c').value, m = document.getElementById('m').value, o = document.getElementById('o').value;
+  const ok = (el, b, t) => { const e = document.getElementById(el); e.textContent = t; e.style.color = b ? 'var(--green, #5CC98A)' : 'var(--red)'; };
+  ok('c3', c >= 3, c >= 3 ? '3 ✓' : c + ' ✗'); ok('m2', m !== '1', m !== '1' ? '2 ✓' : '1 ✗'); ok('o1', o === '1', o === '1' ? '1 ✓' : '0 ✗');
+  document.getElementById('kat').innerHTML = KAT.map(([t, f]) => `<tr><td>${t}</td><td class="num" style="color:${f(c, m, o) ? '#5CC98A' : 'var(--red)'}">${f(c, m, o) ? 'igen' : 'nem'}</td></tr>`).join('');
+}
+['c', 'm', 'o'].forEach(i => document.getElementById(i).addEventListener('input', r321));
+r321();
+</script>
+</body>
+</html>

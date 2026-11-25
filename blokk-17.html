@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>17. blokk – Önjavító hálózat: SDN · Hálózat-őr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+
+  .arch { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .arch .lay { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .arch .lay.edge { border-color: var(--amber); border-width: 2px; }
+  .arch .arr { align-self: center; font-family: var(--mono); color: var(--muted); font-size: 22px; }
+  .arch h3 { font-size: 20px; }
+  .ok { color: #5CC98A; } .no { color: var(--red); }
+
+  
+  
+  
+  
+  .sim { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 20px; }
+  .sim svg { width: 100%; height: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+  .fl { font-size: 13.5px; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid #5CC98A; }
+  .fl span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .fl.lost { border-left-color: var(--red); } .fl.lost span { color: var(--red); }
+  .ev { display: grid; gap: 2px; font-size: 13px; padding: 6px 10px; border-radius: 8px; background: var(--panel-2); border-left: 3px solid var(--cyan); }
+  .ev span { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .ev.em { border-left-color: var(--red); } .ev.vi { border-left-color: #5CC98A; } .ev.warn2 { border-left-color: var(--amber); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .legend i { display: inline-block; width: 18px; height: 5px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+  .chk input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .flow .st { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .flow .st.hot { border-top-color: var(--amber); }
+  .flow h3 { font-size: 18px; }
+  @media (max-width: 860px) {
+    .sim, .flow { grid-template-columns: 1fr; }
+    .head .wrap { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 17. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">17. blokk · „D” modul · AIOps-mérnök szint</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Önjavító hálózat <span>SDN</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Öngyógyító szimuláció</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0450 · P3 · nyitott</span>
+      <p>„Tegnap kiesett az egyik elosztó switch, és két óráig nem volt net a laborban, mert senki nem vette észre. A szállító szerint egy SDN-vezérlő magától átirányította volna a forgalmat. Mutassátok meg, hogyan működne, és hol a határa!” – igazgatóhelyettes</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Elmagyarázod, miben más egy SDN-vezérelt hálózat, mint a hagyományos, és mire valók a vezérlő API-jai.</li>
+      <li>A hálózatot gráfként kezeled: legrövidebb út, linkterhelés, egyetlen hibapontok.</li>
+      <li>Öngyógyító forgatókönyvet írsz kódban, és egy nap eseményein szimulációval kipróbálod.</li>
+      <li>Felismered az önjavítás határait: híd, végpont, túlterhelés, csapkodó link.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>SDN, vezérlő API, gráf, forgatókönyv, határok</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Öngyógyító szimuláció, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Mit oldott volna meg a vezérlő?</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="kor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Öngyógyítás</p>
+      <h2>Észlel, dönt, cselekszik, ellenőriz</h2>
+      <p>Egy központi vezérlő látja az egész hálózatot, és másodpercek alatt reagál. Ha nem tud biztonságosan dönteni, szól egy embernek.</p>
+    </div>
+    <div class="flow">
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">1 · ÉSZLEL</span><h3>Esemény</h3><p class="muted">link kiesik, torlódás, eszköz leáll</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">2 · DÖNT</span><h3>Forgatókönyv</h3><p class="muted">előre leírt szabályok szerint</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">3 · CSELEKSZIK</span><h3>Átirányít</h3><p class="muted">a forgalmat másik útra teszi</p></div>
+      <div class="st hot"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">4 · ELLENŐRIZ</span><h3>Jó lett?</h3><p class="muted">elfér? ha nem: ember</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="szimulator">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: önjavító hálózat-szimulátor</p>
+      <h2>Vágj el egy linket, és nézd, mit tesz a vezérlő</h2>
+      <p>Egy gyakorló hálózat (nem a labor hálózata) négy forgalommal. <b>Kattints egy linkre</b>: kiesik, és a vezérlő dönt. Kattints újra: visszaáll. A ⚠ jel a hidakat mutatja, amelyeknek nincs kerülőútja. Próbáld ki: mi történik az elosztó-A–mag1 kiesésekor? És ha egy linket gyorsan többször egymás után kattintasz?</p>
+    </div>
+    <div class="sim">
+      <div>
+        <svg id="net" viewBox="0 0 760 390" role="img" aria-label="Gyakorló hálózat: kattintható linkek terheléssel"></svg>
+        <div class="legend"><span><i style="background:#4FB3C4"></i>80% alatt</span><span><i style="background:#F0A830"></i>80–100%</span><span><i style="background:#F26B5B"></i>100% fölött</span><span><i style="background:#5A6B78"></i>kiesett</span><span>⚠ híd</span></div>
+        <div style="display:flex;gap:16px;align-items:center;margin-top:12px;flex-wrap:wrap;">
+          <label class="chk"><input type="checkbox" id="flap"> Csapkodás-védelem (3 váltás 20 mp-en belül → ember)</label>
+          <button type="button" class="btn ghost" id="rst">Alaphelyzet</button>
+        </div>
+      </div>
+      <div class="result" aria-live="polite" style="position:static;">
+        <span class="k">Legterheltebb link</span>
+        <span class="mid" id="maxu" style="font-size:28px;"></span>
+        <span class="k">Forgalmak és útvonalaik</span>
+        <div id="flows" style="display:grid;gap:6px;"></div>
+        <span class="k">A vezérlő döntései (legújabb felül)</span>
+        <div id="log" style="display:grid;gap:6px;"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Öngyógyító szimuláció · 10 pont · párban</p>
+      <h2>Hat küldetés, egy forgatókönyv</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. A szimulátor a te döntési függvényedet futtatja végig egy nap eseményein, és megmutatja, hol tér el.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:72px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Bemelegítő</b></td><td>A hálózat gráfként, legrövidebb út</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>Terhelés</b></td><td>Melyik link a legterheltebb?</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>Hidak</b></td><td>Egyetlen hibapontok</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Forgatókönyv</b></td><td>dontes() egy nap eseményein</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Jelentés</b></td><td>Szimulációs jelentés</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz</b></td><td>Átirányítás után: elfér?</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Amit a gép nem tud biztonságosan megoldani, azt jegyként ember kapja.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/TthZGSUQD8MJNAcgMXiVyp">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 18. blokk</p>
+        <h3>Az AIOps tervrajza</h3>
+        <p class="muted">Adatgyűjtés, elemzés, riasztás, beavatkozás: egy láncban.</p>
+      </div>
+      <a class="btn" href="blokk-18.html">Tovább a 18. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+(function () {
+  var N = { R: [70, 70, "határ"], M1: [250, 70, "mag1"], M2: [250, 250, "mag2"], A: [470, 70, "elosztó-A"], B: [470, 250, "elosztó-B"],
+            L: [680, 160, "labor"], T: [680, 330, "tanári"], S: [70, 250, "szerver"] };
+  var E = [["R", "M1", 2, 1000], ["M1", "M2", 1, 10000], ["M1", "A", 1, 1000], ["M2", "B", 1, 1000], ["M1", "B", 3, 1000], ["M2", "A", 3, 1000],
+           ["A", "L", 1, 1000], ["B", "L", 2, 1000], ["B", "T", 1, 1000], ["M1", "S", 1, 10000], ["M2", "S", 1, 10000]];
+  var F = [["L", "S", 500], ["T", "S", 200], ["L", "R", 300], ["T", "R", 150]];
+  var down = {}, hist = {}, log = [];
+  function key(a, b) { return [a, b].sort().join("-"); }
+  function adj(skip) {
+    var g = {}; Object.keys(N).forEach(function (n) { g[n] = []; });
+    E.forEach(function (e) { var k = key(e[0], e[1]); if (down[k] || k === skip) return; g[e[0]].push([e[1], e[2]]); g[e[1]].push([e[0], e[2]]); });
+    return g;
+  }
+  function path(g, s, t) {
+    var d = {}, p = {}, q = Object.keys(g); q.forEach(function (n) { d[n] = Infinity; }); d[s] = 0;
+    while (q.length) {
+      q.sort(function (x, y) { return d[x] - d[y]; }); var u = q.shift();
+      if (d[u] === Infinity) break;
+      g[u].forEach(function (w) { if (d[u] + w[1] < d[w[0]]) { d[w[0]] = d[u] + w[1]; p[w[0]] = u; } });
+    }
+    if (d[t] === Infinity) return null;
+    var r = [t]; while (r[0] !== s) r.unshift(p[r[0]]); return { ut: r, ms: d[t] };
+  }
+  function allapot() {
+    var g = adj(), use = {}, utak = F.map(function (f) {
+      var p = path(g, f[0], f[1]);
+      if (p) for (var i = 0; i < p.ut.length - 1; i++) { var k = key(p.ut[i], p.ut[i + 1]); use[k] = (use[k] || 0) + f[2]; }
+      return p;
+    });
+    return { use: use, utak: utak };
+  }
+  function hidak() {
+    var h = {}, base = adj();
+    E.forEach(function (e) {
+      var k = key(e[0], e[1]); if (down[k]) return;
+      var g = adj(k); if (!path(g, e[0], e[1])) h[k] = true;
+    });
+    return h;
+  }
+  var svg = document.getElementById("net");
+  function draw() {
+    var st = allapot(), h = hidak(), s = "";
+    E.forEach(function (e) {
+      var k = key(e[0], e[1]), a = N[e[0]], b = N[e[1]], u = (st.use[k] || 0) / e[3] * 100;
+      var col = down[k] ? "#5A6B78" : u > 100 ? "#F26B5B" : u >= 80 ? "#F0A830" : u > 0 ? "#4FB3C4" : "#2C3E4C";
+      s += '<g class="lk" data-k="' + k + '" style="cursor:pointer"><line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" stroke="transparent" stroke-width="18"/>' +
+        '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" stroke="' + col + '" stroke-width="' + (down[k] ? 2 : 5) + '"' + (down[k] ? ' stroke-dasharray="6 6"' : "") + '/>';
+      var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+      s += '<text x="' + mx + '" y="' + (my - 8) + '" text-anchor="middle" font-size="12" fill="' + (down[k] ? "#8FA3B3" : "#E6EEF3") + '" font-family="JetBrains Mono, monospace">' + (down[k] ? "LE" : Math.round(u) + "%") + (h[k] ? " ⚠" : "") + '</text></g>';
+    });
+    Object.keys(N).forEach(function (n) {
+      var p = N[n];
+      s += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="24" fill="#16222C" stroke="#4FB3C4" stroke-width="2"/><text x="' + p[0] + '" y="' + (p[1] + 42) + '" text-anchor="middle" font-size="13" fill="#E6EEF3" font-family="IBM Plex Sans, sans-serif">' + p[2] + '</text>' +
+           '<text x="' + p[0] + '" y="' + (p[1] + 5) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#4FB3C4" font-family="JetBrains Mono, monospace">' + n + '</text>';
+    });
+    svg.innerHTML = s;
+    svg.querySelectorAll(".lk").forEach(function (g) { g.addEventListener("click", function () { valt(g.getAttribute("data-k")); }); });
+    var fl = document.getElementById("flows"); fl.innerHTML = "";
+    F.forEach(function (f, i) {
+      var p = st.utak[i], d = document.createElement("div");
+      d.className = "fl" + (p ? "" : " lost");
+      d.innerHTML = "<b>" + N[f[0]][2] + " → " + N[f[1]][2] + "</b> · " + f[2] + " Mbit/s<br><span>" + (p ? p.ut.map(function (x) { return N[x][2]; }).join(" → ") + " (" + p.ms + " ms)" : "NEM ELÉRHETŐ") + "</span>";
+      fl.appendChild(d);
+    });
+    var lg = document.getElementById("log"); lg.innerHTML = log.slice(-8).reverse().map(function (x) { return '<div class="ev ' + x[2] + '"><span>' + x[0] + "</span><b>" + x[1] + "</b></div>"; }).join("") || '<div class="muted">Kattints egy linkre!</div>';
+    var max = Math.max.apply(null, E.map(function (e) { var k = key(e[0], e[1]); return down[k] ? 0 : (st.use[k] || 0) / e[3] * 100; }));
+    document.getElementById("maxu").textContent = Math.round(max) + "%";
+    document.getElementById("maxu").style.color = max > 100 ? "var(--red)" : max >= 80 ? "var(--amber)" : "#5CC98A";
+  }
+  function valt(k) {
+    var most = Date.now() / 1000, uj = !down[k];
+    hist[k] = (hist[k] || []).filter(function (t) { return most - t < 20; }); hist[k].push(most);
+    var e = E.filter(function (x) { return key(x[0], x[1]) === k; })[0], nev = N[e[0]][2] + "–" + N[e[1]][2];
+    var dont, cls;
+    if (document.getElementById("flap").checked && hist[k].length >= 3) { dont = "ember (csapkodás, nem nyúl hozzá)"; cls = "em"; }
+    else if (!uj) { dont = "visszaállítás"; cls = "vi"; }
+    else {
+      down[k] = true; var st = allapot(); down[k] = false;
+      var ok = st.utak.every(function (p) { return p; });
+      dont = ok ? "átirányítás" : "ember (leszakadt forgalom)"; cls = ok ? "at" : "em";
+      if (ok) { var tul = E.some(function (x) { var kk = key(x[0], x[1]); return kk !== k && !down[kk] && (st.use[kk] || 0) > x[3]; }); if (tul) { dont += " · de túlterhelés!"; cls = "warn2"; } }
+    }
+    if (uj) down[k] = true; else delete down[k];
+    log.push([(uj ? "link_down " : "link_up ") + nev, dont, cls]);
+    draw();
+  }
+  document.getElementById("rst").onclick = function () { down = {}; hist = {}; log = []; draw(); };
+  draw();
+})();
+
+</script>
+</body>
+</html>

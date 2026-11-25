@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1. blokk – Első műszak</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(44px, 7vw, 84px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); }
+  .seg.q { border-top-color: var(--amber); }
+  .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; }
+  .seg p { font-size: 14px; color: var(--muted); }
+
+  .chain { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 10px; align-items: stretch; }
+  .chain .arrow { align-self: center; font-family: var(--mono); color: var(--amber); font-size: 22px; }
+  .topic { display: flex; flex-direction: column; gap: 18px; padding: 32px 0; border-top: 1px dashed var(--line); }
+  .topic:first-of-type { border-top: none; padding-top: 0; }
+  .topic > h3 { font-size: 28px; }
+  .topic > p { max-width: 68ch; color: var(--muted); }
+
+  .mttr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .calc label { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .calc-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .calc input { width: 84px; background: var(--night); color: var(--snow); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-family: var(--mono); font-size: 16px; }
+  .calc .out { font-family: var(--mono); font-size: 40px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
+  .formula { font-family: var(--mono); font-size: 15px; background: var(--night); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; color: var(--snow); }
+
+  .video { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .play { aspect-ratio: 16 / 9; border-radius: 8px; background: linear-gradient(135deg, #1D3343, #0A131B); display: grid; place-items: center; border: 1px solid var(--line); text-decoration: none; }
+  .play span { width: 56px; height: 56px; border-radius: 50%; background: var(--amber); display: grid; place-items: center; color: var(--night); font-size: 22px; }
+  .watch { list-style: none; padding: 0; margin: 10px 0 0; display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: var(--muted); }
+  .watch li::before { content: "› "; color: var(--amber); font-family: var(--mono); }
+
+  .triage { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+  .tq { display: flex; flex-direction: column; gap: 14px; }
+  .tq .ticket p { font-family: var(--body); font-size: 16px; color: var(--snow); }
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choice { font-family: var(--mono); font-weight: 700; font-size: 15px; padding: 10px 18px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); cursor: pointer; }
+  .choice:hover { border-color: var(--amber); }
+  .choice[disabled] { cursor: default; opacity: .55; }
+  .choice.picked { opacity: 1; border-color: var(--snow); }
+  .feedback { border-radius: 8px; padding: 14px 16px; font-size: 15.5px; border: 1px solid var(--line); background: var(--panel); }
+  .feedback.ok { border-color: var(--green); }
+  .feedback.near { border-color: var(--amber); }
+  .feedback.miss { border-color: var(--red); }
+  .feedback b { font-family: var(--mono); }
+  .score { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .score .big { font-family: var(--mono); font-size: 44px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1; }
+  .dots { display: flex; gap: 6px; }
+  .dot { width: 28px; height: 8px; border-radius: 4px; background: var(--line); }
+  .dot.ok { background: var(--green); }
+  .dot.near { background: var(--amber); }
+  .dot.miss { background: var(--red); }
+
+  .code { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .code li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .code b { font-family: var(--mono); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--cyan); }
+  .code span { color: var(--muted); font-size: 15.5px; }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .head .wrap, .mttr, .triage, .video { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 14px; }
+    .chain { grid-template-columns: 1fr; }
+    .chain .arrow { transform: rotate(90deg); justify-self: center; }
+    .score { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 1. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a> · <a href="blokk-02.html">2. blokk →</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">1. blokk · „A” modul · L1 ügyeletes szint</p>
+      <h1>Első műszak: <span>Belépés a NOC-ba</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra gyakorlat</span>
+        <span class="chip">Villámkvíz és kihíváskártyák</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">Műszakátadás · 07:58</span>
+      <p>„Szia! Ma te veszed át az ügyeletet. Nyolc nyitott jegy vár, és valaki szerint a B épületben megint nincs wifi. A szabályokat az eligazításon megkapod. Sok sikert!” – az éjszakás kolléga</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Elmondod, mi a NOC és mi az AIOps, és miben más a proaktív üzemeltetés a reaktívnál.</li>
+      <li>Egy hibajegyet indoklással besorolsz P1–P4 prioritásba.</li>
+      <li>Elmagyarázod az SLA, az SLO, a hibakeret és az MTTR fogalmát, és kiszámolsz egy MTTR-t.</li>
+      <li>Ismered az MI hálózati kódex hat szabályát és a Hálózat-őr szintlépési rendszert.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Belépés</h3><p>A NOC és a Bolyai Net</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>AIOps, csapat, hibajegyek, SLA, MTTR, MI-kódex</p></div>
+      <div class="seg q"><b>40–45</b><h3>Kvíz</h3><p>10 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Kihíváskártyák</h3><p>Párban 8 hibajegy osztályozása, közben egy káoszkártya, utána közös megbeszélés</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Átadási jegyzet</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Eligazítás</p><h2>Amit az első műszakhoz tudni kell</h2></div>
+
+    <div class="topic">
+      <h3>A NOC: a hálózat ügyeleti központja</h3>
+      <p>A Network Operations Center (NOC) az a hely, ahol a hálózatot éjjel-nappal figyelik, és ahol a hibát jó esetben előbb veszik észre, mint a felhasználó. Három fő feladata van.</p>
+      <div class="grid g3">
+        <div class="card"><span class="tag">01 · Figyel</span><h3>Monitorozás</h3><p>Követi az eszközök állapotát, a forgalmat és a naplókat.</p></div>
+        <div class="card"><span class="tag">02 · Reagál</span><h3>Incidenskezelés</h3><p>Hibajegyet nyit, osztályoz, elhárít vagy továbbad (eszkalál).</p></div>
+        <div class="card"><span class="tag">03 · Javít</span><h3>Megelőzés</h3><p>Tanul a hibákból: runbookot ír, automatizál, változtat.</p></div>
+      </div>
+    </div>
+
+    <div class="topic">
+      <h3>Az AIOps-lánc: az év útvonala</h3>
+      <p>Az AIOps (Artificial Intelligence for IT Operations) a mesterséges intelligenciát és a gépi tanulást használja az üzemeltetés segítésére. A lánc négy szeme egyben a négy modul. Az év végére csapatban megépíted az egészet: ez lesz a Bolyai NOC 2.0.</p>
+      <div class="chain">
+        <div class="card"><span class="tag">„A” modul</span><h3>Adatgyűjtés</h3><p>Syslog, NetFlow, SNMP</p></div><span class="arrow" aria-hidden="true">→</span>
+        <div class="card"><span class="tag">„B” modul</span><h3>Elemzés</h3><p>Előrejelzés, anomáliák</p></div><span class="arrow" aria-hidden="true">→</span>
+        <div class="card"><span class="tag">„C” modul</span><h3>Riasztás</h3><p>P1–P4, kevesebb zaj</p></div><span class="arrow" aria-hidden="true">→</span>
+        <div class="card"><span class="tag">„D” modul</span><h3>Beavatkozás</h3><p>REST API, SDN, öngyógyítás</p></div>
+      </div>
+    </div>
+
+    <div class="topic">
+      <h3>Prioritás = hatás × sürgősség</h3>
+      <p>Két kérdés dönt: hány embert vagy szolgáltatást érint a hiba, és mennyire sürgető (van-e kerülőút, közeleg-e határidő). Ami L1 szinten nem oldható meg, azt eszkaláljuk a következő szintre.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Prioritás</th><th>Hatás</th><th>Példa</th><th>Reakcióidő</th></tr></thead>
+          <tbody>
+            <tr><td><span class="prio p1">P1 · Kritikus</span></td><td>Sokakat érint, nincs kerülőút</td><td>Leállt az iskola internetkapcsolata</td><td class="num">15 perc</td></tr>
+            <tr><td><span class="prio p2">P2 · Magas</span></td><td>Egy szolgáltatás vagy épület</td><td>Nincs wifi a B épületben</td><td class="num">1 óra</td></tr>
+            <tr><td><span class="prio p3">P3 · Közepes</span></td><td>Egy felhasználó, vagy van kerülőút</td><td>Egy tanári gép nem nyomtat</td><td class="num">1 munkanap</td></tr>
+            <tr><td><span class="prio p4">P4 · Alacsony</span></td><td>Kérés, nem hiba</td><td>Új felhasználói fiók igénylése</td><td class="num">1 hét</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mono" style="font-size:13px;">A reakcióidők a Bolyai Net gyakorló SLA-jának értékei.</p>
+    </div>
+
+    <div class="topic">
+      <h3>SLA, SLO és hibakeret</h3>
+      <div class="grid g3">
+        <div class="card"><span class="tag">SLA · az ígéret</span><p>Szolgáltatási megállapodás a felhasználóval: mit vállalunk és mennyi idő alatt. Például: P2-re 1 órán belül reagálunk.</p></div>
+        <div class="card"><span class="tag">SLO · a mért cél</span><p>A belső cél, amit mérünk, hogy az ígéretet tartani tudjuk. Például: a jegyek 95%-a határidőn belül zárul.</p></div>
+        <div class="card"><span class="tag">Hibakeret · a mozgástér</span><p>Ami a célból „elrontható”: 100 jegyből 5 késhet. Ha elfogy, változtatási tilalom (change freeze) jön.</p></div>
+      </div>
+    </div>
+
+    <div class="topic">
+      <h3>MTTR: mennyi idő alatt állunk talpra?</h3>
+      <p>Az MTTR (Mean Time To Recovery) a helyreállítási idők átlaga. Minél kisebb, annál jobb. Az AIOps két helyen rövidíti: korábban észlel, és gyorsabban segít megtalálni az okot.</p>
+      <div class="mttr">
+        <div class="card">
+          <span class="tag">A képlet</span>
+          <p class="formula">MTTR = (t₁ + t₂ + … + tₙ) / n</p>
+          <p>Három incidens: 20, 40 és 30 perc. (20 + 40 + 30) / 3 = 30 perc.</p>
+        </div>
+        <div class="card calc">
+          <span class="tag">Számold ki</span>
+          <label for="m1">Helyreállítási idők (perc)</label>
+          <div class="calc-row">
+            <input id="m1" type="number" min="0" value="20" aria-label="1. incidens, perc">
+            <input id="m2" type="number" min="0" value="40" aria-label="2. incidens, perc">
+            <input id="m3" type="number" min="0" value="30" aria-label="3. incidens, perc">
+            <input id="m4" type="number" min="0" placeholder="–" aria-label="4. incidens, perc (nem kötelező)">
+          </div>
+          <span class="out" id="mttr-out">30 perc</span>
+          <p id="mttr-note">3 incidens átlaga</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Videó · 2:54 · angol nyelvű</p><h2>Így néz ki egy valódi NOC</h2></div>
+    <div class="video">
+      <a class="play" href="https://www.youtube.com/watch?v=R_o1xpy3EIQ" aria-label="Videó megnyitása a YouTube-on"><span>▶</span></a>
+      <div>
+        <h3 style="font-size:22px;"><a href="https://www.youtube.com/watch?v=R_o1xpy3EIQ">Network Operations Center (NOC) Virtual Tour</a></h3>
+        <p class="muted mono" style="font-size:13px;">Loffler Companies · YouTube · a feliratok bekapcsolhatók</p>
+        <ul class="watch">
+          <li>Hogyan vannak a mérnökök szintekbe sorolva, és mikor adják feljebb a nehéz esetet?</li>
+          <li>Mit mutatnak a sorok előtti kijelzők? Ez lesz a mi NOC-falunk.</li>
+          <li>Mi a csapatok célja a jegyek lezárásán túl?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="gyakorlo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Gyakorló triázs · nem számít a jegybe</p>
+      <h2>Te vagy az L1 ügyeletes</h2>
+      <p>Hat gyakorló jegy. Válaszd ki a prioritást, és nézd meg az indoklást. Szakmailag megindokolható szomszédos prioritásért is jár részpont.</p>
+    </div>
+    <div class="triage">
+      <div class="tq" id="tq"></div>
+      <aside class="score" aria-live="polite">
+        <span class="tag mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">EREDMÉNY</span>
+        <span class="big" id="score">0 / 0</span>
+        <div class="dots" id="dots"></div>
+        <p class="muted" id="score-note" style="font-size:14.5px;">Telitalálat: 1 pont. Megindokolható szomszédos prioritás: ½ pont.</p>
+        <button class="btn ghost" id="restart" type="button">Újrakezdés</button>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Egész évben érvényes</p>
+      <h2>MI hálózati kódex</h2>
+      <p>Az első műszakon mindenki aláírja. A hatodik szabály miatt jár bónuszpont, ha a saját hibádat tárod fel.</p>
+    </div>
+    <ul class="code">
+      <li><b>1 · Ember dönt</b><span>Az MI javasol. Éles rendszerbe csak emberi jóváhagyással kerül változás.</span></li>
+      <li><b>2 · Adatvédelem</b><span>Személyes adatot nem másolok MI-eszközbe. Előbb anonimizálok, a GDPR szerint.</span></li>
+      <li><b>3 · Ellenőrzés</b><span>Az MI által írt szkriptet vagy konfigurációt először tesztkörnyezetben futtatom.</span></li>
+      <li><b>4 · Átláthatóság</b><span>A hibajegyben leírom, mit csinált az MI, és mit én magam.</span></li>
+      <li><b>5 · Felelősség</b><span>Amit jóváhagyok, azért én felelek. „Az MI mondta” nem indoklás.</span></li>
+      <li><b>6 · Hibáztatásmentesség</b><span>A hibát jelentem, nem titkolom el. A folyamatot javítjuk, nem bűnöst keresünk.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 17 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/A2WXr6uomjnMDbFL6avBKr">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow" style="color:var(--cyan);">Következő műszak · 2. blokk</p>
+        <h3>Az ügyeletes zsebkése: Python-szkriptek</h3>
+        <p class="muted">Változók, ciklusok és egyszerű naplófeldolgozó szkriptek a Google Colabban. Hozz Google-fiókot!</p>
+      </div>
+      <a class="btn ghost" href="blokk-02.html">2. blokk megnyitása →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+// MTTR-kalkulátor
+const ids = ['m1','m2','m3','m4'];
+function calc() {
+  const vals = ids.map(id => document.getElementById(id).value.trim()).filter(v => v !== '').map(Number).filter(v => isFinite(v) && v >= 0);
+  const out = document.getElementById('mttr-out');
+  const note = document.getElementById('mttr-note');
+  if (!vals.length) { out.textContent = '–'; note.textContent = 'Adj meg legalább egy időt.'; return; }
+  const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+  out.textContent = (Math.round(avg * 10) / 10).toString().replace('.', ',') + ' perc';
+  note.textContent = vals.length + ' incidens átlaga: (' + vals.join(' + ') + ') / ' + vals.length;
+}
+ids.forEach(id => document.getElementById(id).addEventListener('input', calc));
+calc();
+
+// Gyakorló triázs
+const T = [
+  { id: '#P-101', text: 'A könyvtár egyetlen olvasói gépe lassú, de működik. A könyvtáros szerint „régóta ilyen”.', ok: 'P4', near: ['P3'],
+    why: 'Egy gép, működik, nincs sürgetés: tervezett karbantartásba tehető. P3 is elfogadható, ha a lassúság akadályozza a munkát.' },
+  { id: '#P-102', text: 'Az e-napló az iskolából nem érhető el, otthonról igen. 10 perc múlva kezdődik a tanítás.', ok: 'P2', near: ['P1'],
+    why: 'Minden tanárt érint az iskolában, de van kerülőút (mobilnet), és a hiba az iskola hálózatán van. Az óra kezdete miatt P1 is megindokolható.' },
+  { id: '#P-103', text: 'Egy tanár kéri, hogy telepítsünk a gépére egy új böngészőbővítményt.', ok: 'P4', near: [],
+    why: 'Kérés, nem hiba. Rögzítjük, és a szabályok szerint (engedélyezett-e a bővítmény) intézzük.' },
+  { id: '#P-104', text: 'Riasztás: a szerverterem hőmérséklete 10 perce folyamatosan emelkedik, most 32 °C. A klíma nem válaszol.', ok: 'P1', near: ['P2'],
+    why: 'Ha nem lépünk, a szerverek túlmelegednek és leállnak: az egész iskolát érinti. Azonnali beavatkozás és eszkaláció kell.' },
+  { id: '#P-105', text: 'A DHCP-szerver nem oszt címet. Az új eszközök sehol nem tudnak csatlakozni, a már csatlakozottak még működnek.', ok: 'P2', near: ['P1'],
+    why: 'Most még kevesen érzik, de a hatás percről percre nő, ahogy a címek lejárnak. Ha sokan jelentkeznek, P1-re kell emelni.' },
+  { id: '#P-106', text: 'Egy tanári gépen a fájlok kiterjesztése .locked-ra változott, és egy váltságdíjat követelő szövegfájl jelent meg.', ok: 'P1', near: [],
+    why: 'Zsarolóvírus gyanúja: a gépet azonnal le kell választani a hálózatról, mielőtt továbbterjed. Biztonsági incidens, azonnali eszkaláció.' }
+];
+const tq = document.getElementById('tq');
+const dots = document.getElementById('dots');
+let answers = {};
+function render() {
+  tq.innerHTML = '';
+  dots.innerHTML = '';
+  T.forEach((t, idx) => {
+    const box = document.createElement('div');
+    box.className = 'tq';
+    const ticket = document.createElement('div');
+    ticket.className = 'ticket';
+    ticket.innerHTML = '<div class="t-head"><span>' + t.id + '</span></div><p></p>';
+    ticket.querySelector('p').textContent = t.text;
+    const choices = document.createElement('div');
+    choices.className = 'choices';
+    choices.setAttribute('role', 'group');
+    choices.setAttribute('aria-label', t.id + ' prioritása');
+    ['P1','P2','P3','P4'].forEach(p => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'choice';
+      b.id = 'c-' + idx + '-' + p;
+      b.textContent = p;
+      if (answers[idx]) { b.disabled = true; if (answers[idx] === p) b.classList.add('picked'); }
+      b.addEventListener('click', () => { answers[idx] = p; render(); });
+      choices.appendChild(b);
+    });
+    ticket.appendChild(choices);
+    box.appendChild(ticket);
+    const d = document.createElement('span');
+    d.className = 'dot';
+    if (answers[idx]) {
+      const a = answers[idx];
+      const kind = a === t.ok ? 'ok' : (t.near.includes(a) ? 'near' : 'miss');
+      d.classList.add(kind);
+      const fb = document.createElement('div');
+      fb.className = 'feedback ' + kind;
+      const head = kind === 'ok' ? 'Telitalálat.' : kind === 'near' ? 'Megindokolható.' : 'Nem egészen.';
+      fb.innerHTML = '<b>' + head + ' Várt: ' + t.ok + '.</b> ';
+      fb.appendChild(document.createTextNode(t.why));
+      ticket.appendChild(fb);
+    }
+    dots.appendChild(d);
+    tq.appendChild(box);
+  });
+  const done = Object.keys(answers).length;
+  const pts = T.reduce((s, t, i) => s + (answers[i] === t.ok ? 1 : (answers[i] && t.near.includes(answers[i]) ? .5 : 0)), 0);
+  document.getElementById('score').textContent = String(pts).replace('.', ',') + ' / ' + done;
+  if (done === T.length) {
+    document.getElementById('score-note').textContent = pts >= 5 ? 'Kész az L1 ügyeletre. Az órán a kihíváskártyák még trükkösebbek lesznek.' : 'Nézd át a prioritástáblát, és próbáld újra.';
+  }
+}
+document.getElementById('restart').addEventListener('click', () => { answers = {}; render(); document.getElementById('score-note').textContent = 'Telitalálat: 1 pont. Megindokolható szomszédos prioritás: ½ pont.'; });
+render();
+</script>
+</body>
+</html>

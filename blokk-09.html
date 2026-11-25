@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9. blokk – Neurális szerverdiagnózis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+  .neuron { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 64px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .grp { display: flex; flex-direction: column; gap: 10px; }
+  .grp h3 { font-size: 16px; font-family: var(--mono); color: var(--cyan); letter-spacing: .06em; text-transform: uppercase; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .calc { font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .result .big { font-family: var(--mono); font-size: 44px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1; }
+  .meter { height: 10px; background: var(--panel-2); border-radius: 5px; overflow: hidden; }
+  .meter div { height: 100%; background: var(--amber); width: 0; transition: width .2s; }
+  .verdict { font-size: 15px; }
+
+  .srv { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .srv-card { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .srv-card.esc { border-left-color: var(--amber); }
+  .srv-card b { font-family: var(--mono); font-size: 14px; }
+  .srv-card span { font-size: 13.5px; color: var(--muted); }
+  .srv-card .who { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+  .srv-card.esc .who { color: var(--amber); } .srv-card .who { color: var(--green); }
+
+  .cm td, .cm th { text-align: right; font-family: var(--mono); }
+  .cm td:first-child, .cm th:first-child { text-align: left; }
+  .cm .diag { color: var(--green); font-weight: 700; }
+  .cm .bad { color: var(--red); font-weight: 700; }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+  .next.milestone { border-left-color: var(--amber); }
+
+  @media (max-width: 860px) {
+    .head .wrap, .neuron { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 14px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 56px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 9. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">9. blokk · „B” modul · L2 elemző szint</p>
+      <h1>Neurális <span>szerverdiagnózis</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Mélytanuló szerverteszt</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0230 · P3 · nyitott</span>
+      <p>„Az éjszakás kolléga hét mérőszámra néz rá minden szervernél, és tapasztalatból dönt. Van 1500 kivizsgált esetünk. Megtanítható ez egy gépnek?” – L3 rendszermérnök</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Elmagyarázod, hogyan számol egy neuron, és hogyan épül fel a többrétegű háló.</li>
+      <li>Helyesen választod szét a tanító- és tesztadatot, és tudod, miért kell skálázni.</li>
+      <li>Betanítasz egy hálót, és konfúziós mátrixszal megmutatod, hol téved.</li>
+      <li>Felismered a túltanulást és az ismeretlen adatot, és eldöntöd, mikor hívsz embert.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Neuron, háló, tanítás, értékelés</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Mélytanuló szerverteszt párban, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Jegylezárás</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="neuron">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: egy neuron</p>
+      <h2>Állítsd be a súlyokat, és nézd, mire „gyullad ki”</h2>
+      <p>Három skálázott bemenet egy szerverről, három súly és egy eltolás. A neuron összeadja a súlyozott bemeneteket, majd a ReLU a negatív eredményből nullát csinál. A háló tanításkor pontosan ezeket a számokat állítja be, csak sokkal több neuronon.</p>
+    </div>
+    <div class="neuron">
+      <div class="tool">
+        <div class="grp">
+          <h3>Bemenetek (skálázva)</h3>
+          <div class="row"><label for="x1">hőmérséklet</label><input type="range" id="x1" min="-3" max="3" step="0.1" value="2.1"><output id="x1o"></output></div>
+          <div class="row"><label for="x2">ventilátor</label><input type="range" id="x2" min="-3" max="3" step="0.1" value="-2.4"><output id="x2o"></output></div>
+          <div class="row"><label for="x3">CPU</label><input type="range" id="x3" min="-3" max="3" step="0.1" value="0.3"><output id="x3o"></output></div>
+        </div>
+        <div class="grp">
+          <h3>Súlyok és eltolás</h3>
+          <div class="row"><label for="w1">w · hőmérséklet</label><input type="range" id="w1" min="-1.5" max="1.5" step="0.1" value="0.9"><output id="w1o"></output></div>
+          <div class="row"><label for="w2">w · ventilátor</label><input type="range" id="w2" min="-1.5" max="1.5" step="0.1" value="-0.8"><output id="w2o"></output></div>
+          <div class="row"><label for="w3">w · CPU</label><input type="range" id="w3" min="-1.5" max="1.5" step="0.1" value="0.1"><output id="w3o"></output></div>
+          <div class="row"><label for="b">eltolás</label><input type="range" id="b" min="-3" max="3" step="0.1" value="-0.5"><output id="bo"></output></div>
+        </div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">A NEURON KIMENETE</span>
+        <span class="big" id="out">3,34</span>
+        <div class="meter"><div id="meter"></div></div>
+        <p class="calc" id="calc"></p>
+        <p class="verdict" id="verdict"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="konfuzio">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Hol téved a háló?</p>
+      <h2>Konfúziós mátrix a gyakorló adaton</h2>
+      <p>A 375 tesztesetből 366 helyes (97,6%). Az átlóban a helyes tippek vannak; a többi cella a tévedés. A legfontosabb: 5 memóriaszivárgást „rendben”-nek nézett. Ez a veszélyes irány, mert a hiba észrevétlen marad.</p>
+    </div>
+    <div class="table-wrap">
+      <table class="cm">
+        <thead><tr><th>Valódi ↓ · tipp →</th><th>hűtés</th><th>lemez</th><th>memória</th><th>rendben</th><th>terhelés</th><th>visszahívás</th></tr></thead>
+        <tbody>
+          <tr><td>hűtési hiba</td><td class="diag">50</td><td>0</td><td>0</td><td>0</td><td>0</td><td>100%</td></tr>
+          <tr><td>lemezhiba</td><td>0</td><td class="diag">57</td><td>1</td><td>1</td><td>0</td><td>97%</td></tr>
+          <tr><td>memóriaszivárgás</td><td>0</td><td>0</td><td class="diag">49</td><td class="bad">5</td><td>0</td><td>91%</td></tr>
+          <tr><td>rendben</td><td>0</td><td>0</td><td>2</td><td class="diag">144</td><td>0</td><td>99%</td></tr>
+          <tr><td>túlterhelés</td><td>0</td><td>0</td><td>0</td><td>0</td><td class="diag">66</td><td>100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="kuszob">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Kódex 1. szabály: ember dönt</p>
+      <h2>Mikor hívunk embert?</h2>
+      <p>Kilenc új szerver, a háló diagnózisa és biztossága. Mozgasd a küszöböt: ami alatta van, azt ember kapja. Magasabb küszöb = több munka az ügyeletesnek, kevesebb kockázat.</p>
+    </div>
+    <div class="tool">
+      <div class="row" style="grid-template-columns:150px minmax(0,1fr) 64px;"><label for="thr">küszöb</label><input type="range" id="thr" min="0.5" max="1" step="0.01" value="0.8"><output id="thro"></output></div>
+      <div class="srv" id="srv"></div>
+      <p class="mono" id="srv-sum" style="font-size:14px;" aria-live="polite"></p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Mélytanuló szerverteszt · 10 pont · párban</p>
+      <h2>Hat küldetés, mindegyik egy hibajegy</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Az ellenőrző betöltése néhány másodpercig tart.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Teszt</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Ismerkedés az adattal</b></td><td>Esetek állapotonként, a legmelegebb állapot</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>Tanító- és tesztadat, skálázás</b></td><td>75/25 felosztás, a skálázó csak a tanítóadaton</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>A háló tanítása</b></td><td>MLP (16, 8), legalább 95% a tesztadaton</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Hol téved a háló?</b></td><td>Konfúziós mátrix, visszahívás, értelmezés</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Kísérlet</b></td><td>Skálázás nélkül, más rétegméretek, következtetés</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz: kilenc új szerver</b></td><td>Diagnózis, biztosság, eszkaláció</td><td class="num">–</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/HBZ47Jq67Lruvp2sLf9PrW">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next milestone">
+      <div>
+        <p class="eyebrow">Következő műszak · 10. blokk · 2. mérföldkő</p>
+        <h3>P1: Támadás! IDS/IPS</h3>
+        <p class="muted">Red team / blue team gyakorlat: az L2 előléptetési vizsga.</p>
+      </div>
+      <a class="btn" href="blokk-10.html">Tovább a 10. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const hu = v => v.toFixed(2).replace('.', ',').replace('-', '−');
+// Neuron
+const ids = ['x1', 'x2', 'x3', 'w1', 'w2', 'w3', 'b'];
+function neuron() {
+  const v = Object.fromEntries(ids.map(i => [i, +document.getElementById(i).value]));
+  ids.forEach(i => { document.getElementById(i === 'b' ? 'bo' : i + 'o').textContent = hu(v[i]).replace(/0$/, ''); });
+  const t = [v.x1 * v.w1, v.x2 * v.w2, v.x3 * v.w3];
+  const s = t[0] + t[1] + t[2] + v.b;
+  const out = Math.max(0, s);
+  document.getElementById('out').textContent = hu(out);
+  document.getElementById('meter').style.width = Math.min(100, out / 6 * 100) + '%';
+  document.getElementById('calc').textContent = hu(t[0]) + ' + ' + hu(t[1]) + ' + ' + hu(t[2]) + ' ' + (v.b < 0 ? '− ' + hu(-v.b) : '+ ' + hu(v.b)) + ' = ' + hu(s) + (s < 0 ? '  →  ReLU: 0' : '');
+  document.getElementById('verdict').textContent = out >= 2 ? 'Erősen jelez: ez a neuron a „meleg és nem forog a ventilátor” mintára érzékeny.' : out > 0 ? 'Gyengén jelez.' : 'Hallgat: ennél a szervernél ez a minta nincs jelen.';
+}
+ids.forEach(i => document.getElementById(i).addEventListener('input', neuron));
+neuron();
+
+// Bizonyossági küszöb (a gyakorló munkafüzet eredményei)
+const SRV = [['srv-01', 'rendben', 1.00], ['srv-02', 'lemezhiba', 1.00], ['srv-03', 'túlterhelés', 1.00], ['srv-04', 'hűtési hiba', 1.00], ['srv-05', 'rendben', 1.00],
+             ['srv-06', 'memóriaszivárgás', 1.00], ['srv-07', 'lemezhiba', 1.00], ['srv-08', 'rendben', 1.00], ['srv-09', 'memóriaszivárgás', 0.63]];
+function kuszob() {
+  const t = +document.getElementById('thr').value;
+  document.getElementById('thro').textContent = t.toFixed(2).replace('.', ',');
+  const box = document.getElementById('srv'); box.innerHTML = '';
+  let n = 0;
+  SRV.forEach(([s, d, p]) => {
+    const esc = p < t; if (esc) n++;
+    const c = document.createElement('div'); c.className = 'srv-card' + (esc ? ' esc' : '');
+    c.innerHTML = '<b></b><span></span><span class="who"></span>';
+    c.children[0].textContent = s; c.children[1].textContent = d + ' · ' + p.toFixed(2).replace('.', ',');
+    c.children[2].textContent = esc ? 'EMBER DÖNT' : 'A HÁLÓ JAVASLATA MEHET';
+    box.appendChild(c);
+  });
+  document.getElementById('srv-sum').textContent = n + ' szerver megy emberhez a 9-ből.';
+}
+document.getElementById('thr').addEventListener('input', kuszob);
+kuszob();
+</script>
+</body>
+</html>

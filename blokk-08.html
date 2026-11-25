@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8. blokk – Csendesebb éjszakák: Prediktív riasztás</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .head .wrap, .tune, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 100px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 8. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">8. blokk · „B” modul · L2 elemző szint</p>
+      <h1>Csendesebb éjszakák <span>Prediktív riasztás</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Prediktív riasztási labor</span>
+        <span class="chip">Csendőr jelvény</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0250 · P2 · nyitott</span>
+      <p>„Két hét alatt 78-szor csörgött a riasztó a CPU miatt, a srv-06 lemeze viszont szó nélkül megtelt, és leállt az adatbázis. Csináljatok valamit!” – ügyeletes kolléga</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Elmagyarázod, mi a riasztási fáradtság, és miért veszélyes.</li>
+      <li>Tartóssággal és deduplikációval csökkented a zajt, úgy, hogy a valódi esemény megmaradjon.</li>
+      <li>Trendből kiszámolod, mikor telik meg egy lemez, és időben riasztasz.</li>
+      <li>Számokkal mérlegeled egy szabály árát: hamis riasztás vagy későbbi figyelmeztetés.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Zaj, tartósság, statikus és prediktív riasztás</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Prediktív riasztási labor párban, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Az új szabályrendszer számokkal</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="zaj">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: zajszűrő</p>
+      <h2>Hány óra után számít a terhelés?</h2>
+      <p>A labor valódi CPU-adatai, 8 szerver, két hét. Állítsd be, hány egymást követő órán át kell 80% fölött lennie a CPU-nak, és kapcsold be, hogy egy szakasz csak egyszer riasszon. A srv-05 november 9-i túlterhelése a valódi esemény: ne veszítsd el.</p>
+    </div>
+    <div class="tune">
+      <div class="tool">
+        <div class="row"><label for="k">tartósság</label><input type="range" id="k" min="1" max="5" step="1" value="1"><output id="ko"></output></div>
+        <div class="toggle" role="group" aria-label="Deduplikáció">
+          <button type="button" id="dd0" aria-pressed="true">Minden óra riaszt</button>
+          <button type="button" id="dd1" aria-pressed="false">Szakaszonként egyszer</button>
+        </div>
+        <div class="bars" id="bars" aria-live="polite"></div>
+      </div>
+      <div class="result">
+        <span class="k">Riasztás két hét alatt</span>
+        <span class="big" id="tot"></span>
+        <span class="k">Csökkenés</span>
+        <span class="mid" id="red"></span>
+        <p class="verdict" id="verd"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="lemez">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: statikus vagy prediktív?</p>
+      <h2>Mikor szólt volna a riasztás a srv-06-nál?</h2>
+      <p>A srv-06 lemeze november 10-én 14:00-kor megtelt. Állítsd a statikus küszöböt, a prediktív szabály ablakát és határát, és figyeld: mennyi idővel a megtelés előtt szól, és hány hamis riasztást ad a srv-07 naplószerveren.</p>
+    </div>
+    <div class="lab">
+      <div class="tool">
+        <svg class="chart" id="chart" viewBox="0 0 760 330" role="img" aria-label="A srv-06 lemezhasználata két héten át, a statikus küszöbbel és a riasztások időpontjával"></svg>
+        <div class="legend"><span><i style="background:#4CC3D9"></i>srv-06 lemez</span><span><i style="background:#F26B5B"></i>statikus küszöb / riasztás</span><span><i style="background:#F0A830"></i>prediktív riasztás</span><span><i style="background:#E8EEF2"></i>megtelt</span></div>
+        <div class="row"><label for="thr">statikus küszöb</label><input type="range" id="thr" min="70" max="98" step="1" value="90"><output id="thro"></output></div>
+        <div class="row"><label for="win">trend ablaka</label><input type="range" id="win" min="0" max="3" step="1" value="1"><output id="wino"></output></div>
+        <div class="row"><label for="hor">riaszt, ha hátra van</label><input type="range" id="hor" min="12" max="96" step="12" value="48"><output id="horo"></output></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">Statikus · előny</span>
+        <span class="big" id="st" style="color:var(--red);"></span>
+        <span class="k">Prediktív · előny</span>
+        <span class="big" id="pr"></span>
+        <span class="k">srv-07 hamis riasztás (óra)</span>
+        <span class="mid" id="fa"></span>
+        <p class="verdict" id="verd2"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Prediktív riasztási labor · 10 pont · párban</p>
+      <h2>Hat küldetés, egy szabályrendszer</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Minden küldetés után futtasd az ellenőrzőt: <span class="mono">ellenoriz("M2", valasz)</span>.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>A mostani szabály</b></td><td>Hány CPU-riasztás jött két hét alatt?</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>Tartósság</b></td><td>Legalább 3 óra, szakaszonként egy riasztás</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>Statikus küszöb</b></td><td>Hány óra előnyt adott volna a 90%?</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Prediktív riasztás</b></td><td>Hány óra előnyt ad a trend?</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Csővezeték</b></td><td>Mind a 8 szerver: ki telik meg legelőbb?</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz: ablakméret</b></td><td>6 órás ablak a naplószerveren</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Csendőr jelvény: a végső szabályrendszered a valódi eseményeket megtartja, a zajt legalább 90%-kal csökkenti, és ezt számokkal mutatod meg.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/UmnsiqKe86x5d1Uj5Bv9yy">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 9. blokk</p>
+        <h3>Neurális szerverdiagnózis</h3>
+        <p class="muted">Eddig mi írtuk a szabályokat. Most a gép tanulja meg a hibák mintázatát.</p>
+      </div>
+      <a class="btn" href="blokk-09.html">Tovább a 9. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const O = {"cpu":{"srv-01":[17,18,5,26,21,21,18,11,22,18,25,31,12,29,17,43,29,33,26,18,32,33,23,26,17,86,25,22,29,34,33,36,53,42,65,70,50,52,64,51,64,6,27,19,32,9,24,15,29,44,36,29,31,20,26,27,57,58,59,49,47,51,52,52,68,22,28,18,15,27,33,35,22,34,20,17,24,3,37,17,60,46,54,48,62,50,56,67,58,29,16,27,25,24,24,26,30,26,28,21,40,27,19,15,52,45,52,72,57,46,58,37,62,27,34,9,22,12,11,19,20,19,16,14,29,29,21,29,48,50,51,86,26,57,67,54,58,30,34,24,29,30,24,20,21,30,30,43,29,17,26,25,21,18,13,32,28,27,35,22,24,18,24,21,20,19,24,31,15,24,35,42,26,20,20,31,29,37,32,23,45,13,21,18,31,14,32,20,43,15,30,14,33,25,16,27,19,30,40,18,46,29,61,54,47,84,56,48,53,17,26,29,22,20,36,38,44,38,9,30,20,26,20,25,40,45,57,59,63,48,47,60,63,25,27,29,44,22,26,35,36,33,14,26,26,35,12,41,62,55,46,47,67,54,68,55,60,35,21,32,25,24,26,9,16,7,18,23,31,12,33,23,58,56,60,52,45,49,62,56,53,21,17,19,30,43,27,11,23,15,39,23,33,15,20,37,60,47,51,56,59,53,51,50,72,19,39,24,15,32,27,27,25,18,29,37,31,24,26,37,20,26,9,20,24,24,23,50,32,36,20,34,22,22,21,18],"srv-02":[25,4,30,28,23,35,26,22,19,24,21,27,13,19,19,28,24,23,26,18,31,20,22,21,14,18,12,29,31,37,29,30,52,52,35,50,54,53,52,53,61,25,82,22,32,14,18,29,11,27,26,30,32,23,21,20,72,57,60,59,50,54,60,59,54,10,36,22,17,35,7,28,26,41,15,25,24,32,25,29,51,48,52,60,54,60,53,52,62,31,27,19,36,18,42,17,18,16,28,25,14,52,18,35,62,64,48,49,51,56,52,62,59,19,25,12,35,21,25,21,24,12,19,18,24,8,27,20,60,54,89,51,43,52,50,47,42,15,24,27,24,23,14,17,36,26,4,34,23,30,14,39,26,4,33,24,27,24,34,11,29,27,28,32,34,14,22,26,22,19,27,34,27,22,25,32,30,24,21,20,26,13,87,23,21,21,14,41,12,27,24,20,25,28,20,31,26,27,20,18,56,54,50,52,36,62,40,48,38,8,19,26,88,22,26,26,36,22,32,28,22,38,36,21,56,39,52,49,55,69,58,52,54,34,22,12,11,92,24,36,27,33,24,16,83,22,23,28,54,46,68,55,65,50,42,68,58,32,28,22,33,8,23,29,10,22,36,17,28,36,25,13,51,61,52,61,54,62,49,59,46,30,26,26,22,16,37,28,24,25,23,32,22,20,12,35,61,52,51,50,64,67,59,45,51,19,38,34,29,33,16,30,29,30,29,15,24,6,15,86,29,18,28,31,38,12,26,23,27,30,34,16,38,27,32,23],"srv-03":[28,32,15,86,84,23,22,25,24,33,20,27,32,8,23,30,32,20,20,20,27,18,21,36,30,24,33,26,34,26,90,14,68,50,45,87,66,60,60,42,61,27,11,27,36,30,27,41,25,29,32,35,28,87,33,26,48,83,53,53,66,48,59,84,49,32,20,91,14,30,24,17,91,21,88,18,13,27,18,26,62,35,45,63,87,92,87,60,42,19,84,24,21,27,88,26,13,24,6,23,34,22,26,25,48,45,63,49,49,48,45,46,87,14,15,88,21,27,31,23,23,16,15,7,34,18,43,90,47,52,72,88,64,55,58,55,52,36,28,33,34,25,20,88,11,26,36,82,17,24,30,83,16,27,19,86,19,32,20,34,42,18,29,31,41,30,22,35,19,11,23,32,90,36,17,11,21,34,25,23,88,26,28,19,29,13,17,87,32,17,22,22,25,16,16,32,21,38,25,14,60,67,67,61,54,65,60,69,63,31,19,88,36,16,31,30,18,28,12,30,84,33,42,37,80,45,53,66,44,53,48,48,42,29,17,28,26,30,27,14,24,11,21,28,29,31,17,26,68,62,58,85,60,56,55,64,56,21,17,25,21,87,34,86,17,33,23,34,87,36,29,89,54,78,54,48,64,63,57,57,73,9,34,31,12,24,87,14,32,26,4,15,85,24,26,8,56,46,62,58,58,62,54,57,58,22,30,25,34,39,23,20,90,91,34,20,96,87,35,33,12,18,10,9,29,22,32,19,15,90,33,88,20,24,32,26],"srv-04":[31,16,23,28,39,25,29,22,33,28,14,34,29,31,22,37,27,20,20,23,29,21,15,14,21,30,26,26,25,30,29,19,43,26,51,54,49,58,52,41,54,34,34,40,26,22,30,25,18,18,21,24,22,10,30,20,58,60,49,60,49,58,43,66,41,33,1,30,16,21,23,22,27,22,16,12,88,33,19,33,60,51,65,58,50,54,63,59,57,28,20,24,11,39,24,37,25,32,26,12,21,34,36,32,51,48,58,60,51,43,55,57,57,19,23,14,30,16,14,29,27,44,25,18,17,29,36,34,44,64,50,48,50,55,61,51,39,22,18,16,10,24,9,16,24,29,26,24,34,36,34,30,30,21,24,28,19,31,29,30,10,36,36,26,39,23,20,25,14,37,30,37,33,15,25,28,23,23,32,29,22,4,27,31,26,3,20,28,30,26,31,22,27,34,24,35,36,30,15,35,50,65,58,50,64,59,66,57,60,16,27,38,26,39,31,22,21,30,15,29,28,18,29,11,59,59,55,55,63,71,56,62,59,16,33,30,21,32,26,20,33,44,36,16,18,28,27,36,48,55,50,43,46,33,68,44,74,24,18,23,10,4,18,33,14,27,29,22,30,30,20,38,60,67,49,49,72,58,50,86,59,85,11,29,37,31,36,7,24,21,37,23,23,26,26,17,57,56,57,51,66,35,48,58,68,14,22,29,16,26,43,25,27,38,25,21,86,28,27,6,42,28,34,31,25,23,33,23,32,28,30,31,29,9,16,40],"srv-05":[17,17,31,40,14,17,14,40,41,24,21,5,14,18,13,30,21,27,17,14,21,28,5,18,38,16,42,27,33,28,13,16,43,50,84,47,56,62,54,56,62,32,27,19,33,29,28,24,33,19,24,19,33,22,41,29,44,55,58,60,50,56,58,56,55,18,28,27,18,18,22,33,21,31,29,19,23,18,46,29,56,56,48,58,54,52,45,57,62,24,12,24,14,28,22,29,31,32,33,27,26,36,25,14,57,49,48,51,46,48,61,30,56,22,17,39,6,20,21,24,19,24,18,26,25,22,47,18,52,54,55,58,62,47,61,52,42,21,27,20,23,26,23,23,10,30,25,36,22,27,26,32,18,20,34,30,28,37,29,27,29,27,24,38,18,14,35,46,9,22,17,18,21,15,26,26,18,33,31,22,38,9,11,31,20,25,28,38,34,24,16,39,39,34,20,12,25,34,21,22,46,50,94,92,91,94,94,92,95,27,26,18,36,25,24,26,23,28,23,14,16,37,33,39,63,46,53,44,60,40,56,45,46,33,43,23,18,17,23,29,19,27,24,30,25,14,39,20,57,66,59,58,48,52,59,53,48,35,17,26,26,22,22,25,34,25,31,13,16,15,19,25,59,44,57,57,56,46,55,46,53,17,30,18,24,29,26,26,26,27,30,32,20,23,39,38,55,52,53,55,46,58,57,52,42,35,33,33,27,36,34,27,20,10,22,45,15,27,25,21,20,14,23,30,36,15,10,26,20,28,33,26,16,24,21,14],"srv-06":[38,22,25,28,31,9,27,8,29,16,36,12,22,24,25,19,26,17,25,22,10,26,22,29,38,28,38,14,32,27,24,22,34,47,51,55,66,60,50,64,50,22,36,32,23,17,23,24,25,42,21,18,44,29,24,32,67,53,58,50,41,54,57,57,53,22,25,42,12,24,30,32,19,11,27,14,12,20,27,21,44,55,56,59,48,56,68,57,48,21,23,28,32,14,18,22,31,27,11,23,24,28,17,31,68,53,56,52,57,34,57,43,44,14,28,21,29,16,29,27,40,22,32,25,33,19,22,7,45,44,57,53,57,52,58,69,70,25,31,24,23,31,20,32,34,33,90,38,33,35,25,27,20,24,30,28,18,1,15,28,27,21,20,21,16,24,14,82,32,13,32,37,20,18,38,35,28,14,20,28,20,19,14,38,20,22,38,20,29,27,43,24,16,30,28,11,28,33,14,22,56,53,58,55,62,39,52,55,60,31,21,11,25,31,24,19,18,18,20,40,33,25,21,30,54,67,58,51,66,55,54,43,47,26,12,31,27,35,26,28,15,27,40,44,29,18,34,16,59,64,74,54,73,59,61,52,48,34,29,14,13,14,34,30,6,37,35,90,17,24,23,16,60,44,52,63,50,49,58,64,54,31,21,27,21,31,6,42,36,25,21,20,42,22,17,20,48,60,55,51,40,59,47,57,63,31,26,36,24,34,10,28,32,10,41,33,16,29,20,37,35,18,26,30,20,34,26,21,20,27,17,23,28,15,23,28],"srv-07":[20,15,16,18,19,31,27,12,18,33,23,16,25,33,10,19,86,16,47,12,35,19,31,29,30,39,26,6,28,30,36,9,53,57,49,60,54,50,57,53,56,30,17,35,16,27,20,27,42,17,30,13,33,18,30,27,61,58,52,44,62,66,55,61,49,28,17,38,17,14,90,38,27,34,7,18,22,18,25,25,66,54,64,64,49,45,46,63,56,22,14,25,13,44,22,27,17,29,34,16,33,18,26,22,60,61,46,45,55,49,36,57,58,15,30,32,28,18,27,39,29,20,30,14,26,29,29,50,50,55,37,52,56,40,49,54,55,16,26,15,25,20,33,30,32,28,31,26,17,32,32,30,24,21,32,24,16,17,40,88,17,11,12,16,40,20,14,19,24,29,25,15,15,14,24,29,25,24,25,19,20,23,19,18,32,16,32,22,18,30,29,27,21,19,20,20,32,24,24,37,47,64,42,50,51,45,55,47,50,16,30,19,81,14,25,27,33,87,24,28,16,32,14,24,62,48,45,58,46,46,58,51,86,41,28,27,21,22,19,22,28,21,30,25,24,4,38,20,58,56,54,44,50,78,46,55,53,27,24,30,30,27,19,13,35,21,24,32,28,22,29,33,50,64,47,49,45,62,54,46,51,14,30,15,34,24,17,29,7,24,33,35,26,36,40,25,58,41,47,64,53,65,49,74,51,23,30,11,5,29,32,30,23,38,36,38,31,11,19,16,18,27,81,34,22,13,29,23,25,33,16,30,37,24,24,26],"srv-08":[87,36,32,30,18,15,22,24,19,42,27,30,26,16,29,28,33,35,23,24,13,15,23,33,28,34,26,25,33,40,41,25,45,40,35,42,52,36,60,70,57,29,24,27,14,14,37,22,34,16,92,32,36,26,34,30,54,47,56,42,37,53,59,61,38,18,18,17,20,15,24,26,36,18,25,7,15,19,31,37,53,50,64,68,49,58,59,57,53,19,13,50,19,29,36,27,17,22,37,29,20,8,24,23,53,44,48,46,44,40,59,64,55,18,18,34,24,10,29,28,37,25,26,26,29,22,20,28,50,61,54,43,84,51,61,46,55,24,23,22,26,20,35,22,26,9,26,18,19,30,18,18,20,12,24,32,18,15,30,18,15,35,40,25,15,27,29,40,4,35,11,24,24,30,15,9,15,25,24,41,32,15,22,27,25,28,18,30,13,24,38,31,23,14,21,22,26,36,31,29,61,45,52,56,46,52,70,57,60,28,25,38,15,19,20,35,12,45,27,34,16,29,24,37,53,49,49,53,53,60,59,55,54,26,8,20,35,32,84,28,38,18,22,11,23,12,20,26,46,49,51,50,54,49,57,71,54,36,86,28,23,23,43,14,20,30,49,32,39,26,35,26,54,52,56,56,54,50,57,56,57,42,32,37,30,23,21,21,13,21,1,33,16,18,31,38,64,54,64,46,65,53,52,61,56,21,37,16,22,22,14,32,21,21,29,10,24,16,14,12,23,38,31,28,26,40,28,15,33,33,30,19,32,39,25,32]},"lemez":{"srv-02":[62.0,62.7,61.9,62.3,62.0,63.2,63.4,62.7,62.5,62.9,63.0,63.0,63.4,63.3,64.0,64.2,63.5,63.4,63.8,63.9,63.4,63.6,64.0,64.3,64.4,64.5,64.7,64.5,65.3,64.4,64.8,65.2,65.4,65.1,65.5,65.6,66.0,66.0,65.5,65.5,66.0,66.5,66.3,66.3,66.9,67.1,66.5,67.2,66.9,67.3,67.2,67.0,66.9,67.7,67.4,67.7,68.0,67.8,68.0,67.9,68.3,68.4,68.9,68.6,68.5,69.1,68.4,68.9,68.4,69.2,69.2,68.8,69.3,69.1,70.0,69.9,69.5,69.5,69.9,70.1,69.3,70.6,70.5,70.2,70.7,70.2,70.3,70.2,70.6,70.8,71.1,70.7,71.3,71.4,71.8,71.7,71.5,71.3,71.9,71.7,71.9,72.0,72.5,72.6,72.7,72.7,72.9,72.7,72.6,73.3,72.9,73.4,73.1,73.5,73.3,73.3,74.1,74.4,73.7,73.9,73.6,74.9,74.1,73.8,74.5,75.0,74.1,74.6,74.8,74.8,74.8,74.5,74.8,75.7,75.2,75.4,75.3,76.2,75.7,75.8,76.3,76.4,76.1,76.6,76.7,76.6,76.4,77.0,77.4,77.3,77.0,77.3,77.8,77.3,77.9,77.7,77.6,77.7,77.5,78.2,78.3,78.2,78.3,78.3,78.4,78.2,78.8,78.6,79.2,79.1,79.5,79.6,79.2,79.5,79.0,79.7,79.9,79.4,79.8,79.9,79.8,80.1,79.6,80.3,80.4,80.6,80.2,81.6,81.0,80.9,81.6,81.5,81.5,81.3,81.3,81.7,81.6,81.9,81.7,81.7,82.8,82.1,82.1,82.8,82.4,82.6,82.7,82.9,83.3,82.7,83.0,83.2,83.5,83.2,84.4,83.6,84.1,83.7,84.1,84.0,83.8,84.4,84.9,84.4,84.5,84.5,84.3,85.0,85.6,85.2,85.2,85.2,85.5,85.6,85.6,85.7,85.8,85.9,85.6,85.8,86.0,85.8,86.1,86.8,85.9,86.9,87.4,86.5,86.7,86.9,86.6,87.8,87.2,87.8,87.1,87.8,87.8,88.1,87.6,88.5,87.9,88.5,88.2,88.1,88.7,88.5,88.5,89.2,88.9,89.3,89.3,89.1,89.6,89.1,89.8,89.6,90.0,89.5,89.3,90.2,90.5,90.4,90.7,90.2,90.9,90.9,90.7,90.4,91.2,91.2,90.7,91.3,91.2,91.7,92.0,92.0,91.6,91.6,92.3,92.2,92.1,92.2,92.4,92.8,93.0,93.0,92.3,93.2,93.2,93.3,93.0,92.8,93.2,93.2,93.4,93.7,93.8,94.0,94.3,94.2,93.6,94.1,94.1,94.1,95.0,94.9,94.4,94.9,94.9,94.8,95.4,95.1,95.6,95.0,96.2,95.7],"srv-06":[70.3,70.2,69.9,69.9,70.1,70.2,70.3,70.5,70.3,70.4,71.0,70.7,70.8,70.9,70.9,71.0,71.1,70.9,71.1,71.0,71.1,70.9,71.5,71.5,71.2,71.4,71.3,71.4,71.6,71.6,71.7,71.9,72.0,72.0,71.3,71.9,71.7,71.6,72.1,71.9,72.1,72.1,72.0,72.7,72.2,72.4,72.1,72.3,72.2,72.9,72.4,73.1,72.6,72.8,72.9,72.4,72.8,72.5,73.2,73.1,72.6,73.2,73.1,73.7,73.5,73.9,73.6,73.8,73.8,73.1,73.6,73.3,73.4,73.9,73.8,73.7,74.5,73.9,73.9,74.1,73.9,74.0,74.4,73.7,74.3,74.0,74.4,74.1,74.0,74.3,74.7,74.5,74.5,74.6,74.9,74.4,74.9,75.2,75.0,74.6,75.2,75.0,74.5,74.9,75.1,75.5,75.6,75.4,74.9,75.7,75.8,75.5,75.9,75.4,75.8,75.8,75.6,75.3,76.3,76.4,75.8,75.9,76.2,76.1,76.6,76.4,76.0,76.3,76.3,76.4,76.7,76.6,76.9,76.8,75.9,76.9,76.4,77.3,77.3,76.6,77.3,77.0,77.4,77.3,76.9,77.0,77.3,77.7,77.7,77.3,77.6,77.7,77.4,77.8,77.5,77.5,77.8,77.8,78.1,77.9,77.9,78.2,78.4,78.4,78.1,78.7,78.0,78.4,78.4,78.5,79.0,79.5,78.9,79.3,80.0,80.5,80.8,81.7,81.7,82.0,83.2,82.4,83.1,83.2,83.8,84.6,84.6,84.0,84.8,85.4,86.4,86.2,86.7,87.0,86.5,88.0,87.6,88.5,89.1,88.8,89.4,89.4,90.1,90.4,90.9,91.5,91.8,91.3,92.2,92.8,93.0,93.1,94.1,94.1,93.9,94.7,94.9,95.0,95.6,96.1,95.8,96.8,96.8,97.6,97.5,98.1,98.5,98.9,98.9,99.3,99.8,99.9,100.0,55.6,55.6,55.1,54.6,55.6,55.2,55.5,55.2,55.6,55.5,55.1,55.7,55.4,56.0,55.5,56.0,55.2,56.0,55.4,55.9,55.8,55.6,56.2,56.0,56.7,56.1,56.0,56.1,56.6,56.5,56.3,56.6,56.7,56.3,56.8,56.8,57.1,56.9,56.5,57.3,57.1,57.0,57.2,56.9,57.4,58.0,56.9,57.2,57.4,57.4,56.9,57.2,57.4,57.3,57.6,58.5,57.9,57.8,57.0,57.8,58.4,57.9,58.0,58.3,58.7,58.2,58.3,58.3,58.2,58.5,58.1,58.3,58.4,59.0,59.0,58.7,59.0,59.2,59.4,58.8,59.2,59.2,58.8,59.2,58.8,59.0,59.2,59.3,59.3,59.1,59.7,59.5,59.8,59.9,60.0,60.6,59.8,59.8,59.5,60.7,59.7,59.9,60.5],"srv-07":[40.2,39.9,39.3,40.1,39.8,40.1,40.2,40.6,42.4,43.1,44.3,45.0,46.9,47.6,49.1,49.6,51.0,52.2,53.0,54.6,55.4,55.8,57.2,58.4,40.2,40.3,39.7,39.9,40.3,39.7,39.9,41.3,42.3,43.3,44.5,45.6,46.4,47.7,48.9,50.0,51.3,52.2,52.8,54.3,55.3,56.9,57.4,58.5,40.1,40.2,39.6,39.3,39.9,39.8,39.6,41.3,41.7,42.8,44.5,45.6,46.8,47.3,48.7,50.0,51.0,51.8,53.8,54.3,55.5,56.5,57.6,58.5,39.9,40.3,39.8,39.6,39.9,40.3,40.5,41.2,42.0,43.6,44.2,45.6,47.2,48.2,48.6,50.5,51.5,51.8,53.7,53.9,55.3,56.4,57.1,58.7,39.6,39.8,40.2,40.2,40.0,40.3,39.6,41.1,41.6,42.7,44.3,45.4,46.8,48.0,48.8,49.7,51.2,52.3,53.5,54.4,55.6,56.6,58.0,58.5,39.5,40.3,39.7,39.7,39.6,40.2,39.7,41.1,42.4,43.5,44.0,45.4,46.3,47.6,49.5,49.8,50.9,51.8,53.6,54.3,55.3,56.1,57.7,58.5,39.9,40.3,40.2,39.5,40.4,40.2,39.0,40.7,42.1,43.6,44.3,45.5,46.3,47.4,48.9,49.9,51.3,51.8,52.6,54.8,55.4,56.5,57.8,59.1,39.5,40.3,40.6,40.2,39.8,39.8,40.1,41.0,42.3,43.2,44.3,45.1,45.6,47.8,48.4,49.8,50.9,52.6,53.6,53.8,55.1,56.5,56.9,58.8,40.0,40.0,40.3,40.0,40.3,40.2,40.0,41.3,42.3,43.7,44.4,45.2,47.1,47.4,48.1,49.6,50.8,52.4,52.8,54.3,55.3,56.4,57.4,58.7,40.2,40.3,39.8,39.7,39.6,39.7,39.5,41.3,42.2,43.2,44.5,45.2,46.7,47.5,48.9,49.5,50.7,52.0,53.7,54.4,55.4,56.8,58.2,58.8,39.7,39.9,40.2,40.0,39.2,39.7,40.1,41.5,42.1,42.9,44.9,45.4,46.7,47.7,49.1,50.0,50.9,51.9,53.7,54.0,55.3,56.7,57.7,58.9,39.7,39.9,40.0,39.6,39.3,40.6,40.0,41.4,42.4,43.6,44.4,45.3,46.4,48.4,48.3,49.3,50.6,52.1,53.1,54.3,55.0,56.6,57.0,58.7,39.7,40.2,39.9,40.0,39.5,40.6,39.8,41.0,42.7,43.2,44.4,45.2,46.7,47.3,48.6,50.0,51.1,52.3,53.3,54.5,55.0,56.7,57.8,58.8,39.8,40.0,40.1,39.5,39.9,39.6,39.4,40.6,41.9,42.9,44.2,45.9,46.4,47.6,49.0,49.8,50.7,52.0,53.1,54.0,55.0,56.8,57.2,59.0]}};
+const START = Date.UTC(2026, 10, 1), H = 36e5;
+const NAP = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'];
+const ts = i => { const d = new Date(START + i * H); return 'nov. ' + d.getUTCDate() + '. (' + NAP[d.getUTCDay()] + ') ' + String(d.getUTCHours()).padStart(2, '0') + ':00'; };
+
+// 1. zajszűrő
+let dedup = false;
+function alerts(a, k, dd) {
+  let run = 0, n = 0, first = [];
+  a.forEach((v, i) => { run = v > 80 ? run + 1 : 0; if (run >= k && (!dd || run === k)) { n++; if (run === k) first.push(i); } });
+  return { n, first };
+}
+function zaj() {
+  const k = +document.getElementById('k').value;
+  document.getElementById('ko').textContent = k + ' óra';
+  let tot = 0; const rows = [];
+  for (const [s, a] of Object.entries(O.cpu)) { const r = alerts(a, k, dedup); tot += r.n; rows.push([s, r.n, r.first]); }
+  const mx = Math.max(1, ...rows.map(r => r[1]));
+  const bars = document.getElementById('bars'); bars.innerHTML = '';
+  rows.forEach(([s, n]) => {
+    const el = document.createElement('div'); el.className = 'bar' + (s === 'srv-05' ? ' hit' : '');
+    el.innerHTML = `<span>${s}</span><span class="t"><div style="width:${n / mx * 100}%"></div></span><b>${n}</b>`; bars.appendChild(el);
+  });
+  document.getElementById('tot').textContent = tot;
+  document.getElementById('red').textContent = tot === 78 ? 'kiinduló állapot' : '−' + Math.round((1 - tot / 78) * 100) + '%';
+  const s5 = rows.find(r => r[0] === 'srv-05')[1];
+  let v;
+  if (!s5) v = 'Túl szigorú: a srv-05 valódi túlterhelése is elveszett.';
+  else if (tot <= 3) v = 'Csend és biztonság: a zaj eltűnt, a srv-05 túlterhelése megmaradt. Ez a Csendőr szintje.';
+  else if (k === 1) v = 'Ez a mostani szabály: minden egyórás tüske riaszt, a srv-03 fordításai adják a zaj felét.';
+  else v = 'Jó irány, de még ' + tot + ' riasztás jön. ' + (dedup ? 'Próbálj szigorúbb tartósságot.' : 'Kapcsold be, hogy egy szakasz csak egyszer riasszon.');
+  document.getElementById('verd').textContent = v;
+}
+function setDd(v) { dedup = v; document.getElementById('dd0').setAttribute('aria-pressed', !v); document.getElementById('dd1').setAttribute('aria-pressed', v); zaj(); }
+document.getElementById('dd0').addEventListener('click', () => setDd(false));
+document.getElementById('dd1').addEventListener('click', () => setDd(true));
+document.getElementById('k').addEventListener('input', zaj);
+zaj();
+
+// 2. statikus vs prediktív
+const WINS = [6, 24, 48, 72];
+function ttf(v, w) {
+  const out = [];
+  for (let i = 0; i < v.length; i++) {
+    if (i < w - 1) { out.push(NaN); continue; }
+    let sx = 0, sy = 0, sxy = 0, sxx = 0;
+    for (let j = 0; j < w; j++) { const y = v[i - w + 1 + j]; sx += j; sy += y; sxy += j * y; sxx += j * j; }
+    const b = (w * sxy - sx * sy) / (w * sxx - sx * sx);
+    out.push(b > 0 ? (100 - v[i]) / b : Infinity);
+  }
+  return out;
+}
+const L6 = O.lemez['srv-06'], L7 = O.lemez['srv-07'];
+const FULL = L6.findIndex(x => x >= 99.5);
+function lemez() {
+  const thr = +document.getElementById('thr').value, w = WINS[+document.getElementById('win').value], hor = +document.getElementById('hor').value;
+  document.getElementById('thro').textContent = thr + '%';
+  document.getElementById('wino').textContent = w + ' óra';
+  document.getElementById('horo').textContent = hor + ' óra';
+  const st = L6.findIndex(x => x > thr);
+  const t6 = ttf(L6, w), pr = t6.findIndex(x => x < hor);
+  const fa = ttf(L7, w).filter(x => x < hor).length;
+  const ahead = i => i < 0 || i > FULL ? 'nem szólt' : (FULL - i) + ' óra';
+  document.getElementById('st').textContent = ahead(st);
+  document.getElementById('pr').textContent = ahead(pr);
+  document.getElementById('fa').textContent = fa === 0 ? '0 · csend' : fa;
+  let v = '';
+  if (pr >= 0 && pr <= FULL) v = 'Prediktív riasztás: ' + ts(pr) + '. ';
+  if (st >= 0 && st <= FULL) v += 'Statikus: ' + ts(st) + '. ';
+  if (fa > 20) v += 'A naplószerver ' + fa + ' órában riaszt hamisan: ezt senki nem bírja sokáig.';
+  else if (fa > 0) v += 'A naplószerver még ' + fa + '-szer riaszt, főleg késő este.';
+  else v += 'A naplószerver csendes. Nézd meg, mennyi előnyt adtál fel érte.';
+  document.getElementById('verd2').textContent = v;
+  // rajz
+  const X0 = 44, X1 = 744, Y0 = 300, Y1 = 14, n = L6.length;
+  const x = i => X0 + (X1 - X0) * i / (n - 1), y = val => Y0 - (Y0 - Y1) * (val - 40) / 60;
+  let s = '';
+  [50, 60, 70, 80, 90, 100].forEach(g => { s += `<line x1="${X0}" x2="${X1}" y1="${y(g)}" y2="${y(g)}" stroke="#2A3C4B"/><text x="${X0 - 6}" y="${y(g) + 4}" fill="#8FA3B3" font-size="11" text-anchor="end" font-family="JetBrains Mono, monospace">${g}</text>`; });
+  for (let dd = 0; dd < 14; dd += 2) s += `<text x="${x(dd * 24)}" y="${Y0 + 22}" fill="#8FA3B3" font-size="11" font-family="JetBrains Mono, monospace">nov. ${dd + 1}.</text>`;
+  s += `<line x1="${X0}" x2="${X1}" y1="${y(thr)}" y2="${y(thr)}" stroke="#F26B5B" stroke-width="2" stroke-dasharray="8 6"/>`;
+  s += `<polyline points="${L6.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ')}" fill="none" stroke="#4CC3D9" stroke-width="2.5"/>`;
+  s += `<line x1="${x(FULL)}" x2="${x(FULL)}" y1="${Y1}" y2="${Y0}" stroke="#E8EEF2" stroke-width="2"/>`;
+  if (st >= 0) s += `<line x1="${x(st)}" x2="${x(st)}" y1="${Y1}" y2="${Y0}" stroke="#F26B5B" stroke-width="3"/>`;
+  if (pr >= 0) s += `<line x1="${x(pr)}" x2="${x(pr)}" y1="${Y1}" y2="${Y0}" stroke="#F0A830" stroke-width="3"/>`;
+  document.getElementById('chart').innerHTML = s;
+}
+['thr', 'win', 'hor'].forEach(i => document.getElementById(i).addEventListener('input', lemez));
+lemez();
+</script>
+</body>
+</html>

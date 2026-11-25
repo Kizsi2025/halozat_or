@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>21. blokk – Bolyai NOC 2.0: Projektindítás · Hálózat-őr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+
+  .arch { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .arch .lay { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .arch .lay.edge { border-color: var(--amber); border-width: 2px; }
+  .arch .arr { align-self: center; font-family: var(--mono); color: var(--muted); font-size: 22px; }
+  .arch h3 { font-size: 20px; }
+  .ok { color: #5CC98A; } .no { color: var(--red); }
+
+  
+  
+  
+  
+  
+  
+  
+  .hitl { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
+  .qs { display: grid; gap: 10px; }
+  .q { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 10px; align-items: center; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 14.5px; }
+  .q select { font-family: var(--mono); font-size: 14px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+  .q input[type=range] { accent-color: var(--amber); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .presets button { font-size: 13.5px; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .presets button:hover { border-color: var(--cyan); }
+  #ok { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; }
+  .cards-q { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .card-q { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
+  .card-q b { font-size: 16px; }
+  .card-q span { display: none; font-size: 14px; color: var(--muted); }
+  .card-q.open span { display: block; }
+  .card-q.open { border-color: var(--cyan); }
+  .flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .flow .st { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .flow .st.hot { border-top-color: var(--amber); }
+  .flow .st.red { border-top-color: var(--red); }
+  .flow h3 { font-size: 18px; }
+  @media (max-width: 860px) {
+    .hitl, .flow, .cards-q { grid-template-columns: 1fr; }
+    .head .wrap { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+  }
+
+  .rrow { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); gap: 8px; align-items: center; padding: 8px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; font-size: 14.5px; }
+  .rrow select, .tin, #ki { font-family: var(--mono); font-size: 14px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); width: 100%; }
+  .rhead { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); gap: 8px; padding: 0 12px; font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .06em; }
+  #hib { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; }
+  .chain { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 10px; }
+  .chain .st { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
+  .chain .st:last-child { border-top-color: var(--amber); }
+  .chain code { font-family: var(--mono); font-size: 15px; color: var(--snow); }
+  .chain small { color: var(--muted); font-size: 13px; }
+  @media (max-width: 860px) { .chain { grid-template-columns: 1fr; } .rrow, .rhead { grid-template-columns: 1fr 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 21. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">21. blokk · Záróprojekt · Bolyai NOC 2.0</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Bolyai NOC 2.0 <span>Projektindítás</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Projekt- és szerepkör-rögzítés</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0490 · P2 · nyitott</span>
+      <p>„Az elmúlt félévben mindent megépítettetek darabonként. Most rakjátok össze: a Bolyai NOC 2.0 egy csapatban fejlesztett AIOps-platform lesz, amely a 30–31. blokkban élesben, a megrendelő előtt mutatkozik be. Ma rögzítsük: ki mit csinál, mikorra, és miből látjuk, hogy kész.” – igazgató</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Csapatban szétosztjátok az öt szerepet, mindegyiknek felelőssel és helyettessel.</li>
+      <li>Érted, mire jó a modulok közti szerződés, és megírod az első csonkokat.</li>
+      <li>Ütemtervet és kockázatnaplót készítesz a 22–31. blokkra.</li>
+      <li>Mérhető sikerkritériumokat írsz, és aláírjátok a projektalapító okiratot.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy óra tervezés, egy óra rögzítés</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>Csapatok kialakítása</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Platform, szerződés, szerepek, értékelés</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>Öt kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Szerepek, zöld teszt, ütemterv, okirat</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>A fő sikerkritérium</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="lanc">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Architektúra · a szerződés</p>
+      <h2>Öt modul, egy lánc</h2>
+      <p>Minden modul pontosan meghatározott formában adja tovább az adatot. Ha mindenki betartja, a modulok külön-külön fejleszthetők, és a 27. blokk Game Day-én összeillenek.</p>
+    </div>
+    <div class="chain">
+      <div class="st"><code>gyujt(H, percek)</code><small>→ táblázat: perc, eszköz, metrika, érték</small><small>22. blokk · adatmérnök</small></div>
+      <div class="st"><code>tisztit(df)</code><small>→ ugyanaz, csak számok, hiány nélkül, álnevesítve</small><small>23. blokk · adatmérnök</small></div>
+      <div class="st"><code>jelez(df)</code><small>→ jelzések pontszámmal</small><small>24. blokk · ML-mérnök</small></div>
+      <div class="st"><code>riaszt(jelzesek)</code><small>→ incidensek P1–P4</small><small>25. blokk · automatizációs mérnök</small></div>
+      <div class="st"><code>beavatkozik(inc)</code><small>→ egy runbook-művelet, „jegy” vagy „nincs”</small><small>26. blokk · automatizációs mérnök</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="szerepkioszto">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: szerepkiosztó és busz-faktor</p>
+      <h2>Mi lesz, ha valaki kiesik?</h2>
+      <p>Írd be a csapat neveit vesszővel, oszd ki az öt szerepet, majd válaszd ki, ki esik ki. A <b>busz-faktor</b> azt mutatja, hány embernek kell kiesnie ahhoz, hogy egy szerep gazdátlan maradjon: legalább 2 legyen. Kitalált nevekkel próbáld.</p>
+    </div>
+    <div class="presets">
+      <button type="button" data-p="ketto">3 fő, jó helyettesekkel</button>
+      <button type="button" data-p="egy">4 fő, egy ember mindent visz</button>
+      <button type="button" data-p="jo">5 fő, mindenkinek egy szerep</button>
+    </div>
+    <div class="hitl">
+      <div class="qs">
+        <div class="q" style="grid-template-columns:1fr;"><label for="tg">A csapat tagjai (vesszővel)</label><input id="tg" class="tin" value="Anna, Bence, Dóra, Marcell"></div>
+        <div class="rhead"><span>SZEREP</span><span>FELELŐS</span><span>HELYETTES</span></div>
+        <div id="racs" class="qs"></div>
+        <div class="q"><label for="ki">Ki esik ki három hétre?</label><select id="ki"></select></div>
+      </div>
+      <div class="result" aria-live="polite" style="position:static;">
+        <span class="k">Busz-faktor</span>
+        <span class="mid" id="bf" style="font-size:28px;"></span>
+        <span class="k">Ellenőrzés</span>
+        <ul id="hib"></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="merheto">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: mérhető-e a sikerkritérium?</p>
+      <h2>„Jól működik” helyett számok</h2>
+      <p>A jó kritériumban van szám, mértékegység és küszöb, és tudjuk, mikor mérjük. Az ellenőrzés egyszerű szóminta-keresés, nem tökéletes: a végső szót a csapat és az oktató mondja ki.</p>
+    </div>
+    <div class="presets">
+      <button type="button" data-k="Gyorsan észleli a hibákat.">Gyorsan észleli a hibákat.</button>
+      <button type="button" data-k="Az átlagos MTTD legfeljebb 5 perc a Game Day-en.">Átlagos MTTD ≤ 5 perc</button>
+      <button type="button" data-k="Legfeljebb 1 hamis incidens naponta.">≤ 1 hamis incidens naponta</button>
+      <button type="button" data-k="Szép lesz a dashboard.">Szép lesz a dashboard.</button>
+    </div>
+    <div class="q" style="grid-template-columns:1fr;"><label for="kr">A ti kritériumotok</label><input id="kr" class="tin" placeholder="pl. A dashboard 10 másodpercen belül frissül a bemutatón."></div>
+    <p id="krv" style="margin-top:12px;font-size:15px;"></p>
+  </div>
+</section>
+
+<section class="block" id="fogalmak">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Gyakorlás: projektfogalmak</p>
+      <h2>Kattints a kártyára a magyarázatért</h2>
+    </div>
+    <div class="cards-q">
+      <div class="card-q" tabindex="0"><b>Szerződés (interfész)</b><span>Rögzíti, mit kap és mit ad vissza egy modul. Így a csapattagok párhuzamosan dolgozhatnak.</span></div>
+      <div class="card-q" tabindex="0"><b>Csonk (stub)</b><span>Egyszerű, „buta” változat, amely csak a formát tudja. Az első napon már fut vele a teljes lánc és a teszt.</span></div>
+      <div class="card-q" tabindex="0"><b>Busz-faktor</b><span>Hány ember kiesése állítja le a projektet. Ha 1, egyetlen betegség is megállíthat mindent.</span></div>
+      <div class="card-q" tabindex="0"><b>Hatókör: mi NINCS benne?</b><span>Legalább annyira fontos, mint ami benne van: megvédi a csapatot attól, hogy menet közben egyre több feladat kerüljön rá.</span></div>
+      <div class="card-q" tabindex="0"><b>Kockázatnapló</b><span>Lista a lehetséges bajokról: valószínűség × hatás, felelős, és mit teszünk ellene. Hetente érdemes átnézni.</span></div>
+      <div class="card-q" tabindex="0"><b>Projektalapító okirat</b><span>Közös megállapodás a célról, a hatókörről, a sikerkritériumokról és a munkaszabályokról, a csapat aláírásával.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Projekt- és szerepkör-rögzítés · 10 pont · csapatban</p>
+      <h2>Hat küldetés, egy elindított projekt</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Az ellenőrzők a szerkezetet nézik: minden csapat más, de érvényes megoldást adhat.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:72px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Szerepek</b></td><td>Öt szerep, felelős és helyettes</td><td class="num">2</td></tr>
+          <tr><td class="num">M2</td><td><b>Első zöld teszt</b></td><td>Öt csonk a szerződés szerint</td><td class="num">SLA</td></tr>
+          <tr><td class="num">M3</td><td><b>Ütemterv</b></td><td>A 22–31. blokk felelősei és leadásai</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Kockázatnapló</b></td><td>Legalább 5 kockázat, kezeléssel</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Okirat</b></td><td>Cél, hatókör, kritériumok, aláírás</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz</b></td><td>README.md a tárolóba</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/GfZqwFwQe5hYuqy6jNbwia">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 22. blokk</p>
+        <h3>Adatforrások és szkriptelés</h3>
+        <p class="muted">Az adatgyűjtő modul: a csonkból valódi kód lesz.</p>
+      </div>
+      <span class="mono" style="color:#6F8494;font-size:12px;">hamarosan</span>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var SZ = ["termékgazda", "adatmérnök", "ML-mérnök", "automatizációs mérnök", "ügyeleti vezető"];
+  var PRE = {
+    ketto: { t: "Anna, Bence, Dóra", r: [[0,1],[1,2],[2,1],[1,0],[0,2]] },
+    egy: { t: "Anna, Bence, Dóra, Marcell", r: [[0,0],[1,1],[1,2],[1,3],[0,3]] },
+    jo: { t: "Anna, Bence, Dóra, Marcell, Zoé", r: [[0,4],[1,3],[2,1],[3,0],[4,2]] }
+  };
+  function tagok() { return $("tg").value.split(",").map(function (s) { return s.trim(); }).filter(Boolean); }
+  function racs() {
+    var t = tagok(), h = "";
+    SZ.forEach(function (sz, i) {
+      var o = '<option value="">–</option>' + t.map(function (n) { return '<option>' + n.replace(/</g, "&lt;") + '</option>'; }).join("");
+      h += '<div class="rrow"><b>' + sz + '</b><select id="f' + i + '" aria-label="' + sz + ' felelőse">' + o + '</select><select id="h' + i + '" aria-label="' + sz + ' helyettese">' + o + '</select></div>';
+    });
+    $("racs").innerHTML = h;
+    SZ.forEach(function (_, i) { $("f" + i).onchange = $("h" + i).onchange = eval_; });
+    var ki = '<option value="">senki</option>' + t.map(function (n) { return '<option>' + n.replace(/</g, "&lt;") + '</option>'; }).join("");
+    $("ki").innerHTML = ki;
+    eval_();
+  }
+  function eval_() {
+    var t = tagok(), hib = [], kies = $("ki").value, fed = [];
+    if (t.length < 3 || t.length > 5) hib.push("A csapat 3–5 fős legyen (most " + t.length + ").");
+    SZ.forEach(function (sz, i) {
+      var f = $("f" + i).value, h = $("h" + i).value;
+      if (!f || !h) { hib.push(sz + ": hiányzik a felelős vagy a helyettes."); fed.push(0); return; }
+      if (f === h) hib.push(sz + ": a helyettes ugyanaz, mint a felelős.");
+      var emb = [f, h].filter(function (x, j, a) { return a.indexOf(x) === j && x !== kies; });
+      fed.push(emb.length);
+      if (kies && emb.length === 0) hib.push(sz + ": " + kies + " nélkül senki sem marad!");
+    });
+    t.forEach(function (n) {
+      var van = SZ.some(function (_, i) { return $("f" + i).value === n; });
+      if (!van) hib.push(n + " egyik szerepnek sem felelőse.");
+    });
+    var terh = {}; t.forEach(function (n) { terh[n] = 0; });
+    SZ.forEach(function (_, i) { var f = $("f" + i).value; if (f in terh) terh[f]++; });
+    var max = 0, kie = ""; for (var n in terh) if (terh[n] > max) { max = terh[n]; kie = n; }
+    if (max >= 3) hib.push(kie + " " + max + " szerep felelőse: túl sok egy embernek.");
+    var bf = fed.length ? Math.min.apply(null, fed) : 0;
+    $("bf").textContent = kies ? (bf === 0 ? "a projekt megáll" : "minden szerepnek marad embere") : String(bf);
+    $("bf").style.color = (kies ? bf === 0 : bf < 2) ? "var(--red)" : "var(--green)";
+    $("hib").innerHTML = hib.length ? hib.map(function (x) { return "<li>" + x.replace(/</g, "&lt;") + "</li>"; }).join("") : "<li>" + (kies ? "Rendben: " + kies.replace(/</g, "&lt;") + " nélkül is minden szerepnek marad embere." : "Rendben: minden szerepnek két embere van.") + "</li>";
+  }
+  $("tg").addEventListener("input", racs);
+  $("ki").addEventListener("change", eval_);
+  document.querySelectorAll("[data-p]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var p = PRE[b.getAttribute("data-p")], t;
+      $("tg").value = p.t; racs(); t = tagok();
+      p.r.forEach(function (x, i) { $("f" + i).value = t[x[0]]; $("h" + i).value = t[x[1]]; });
+      $("ki").value = ""; eval_();
+    });
+  });
+  racs();
+  // mérhető-e?
+  var MINT = /(\d+([.,]\d+)?)\s*(\S+\s+)?(%|perc|mp|másodperc|óra|nap|db|darab|ms|s\b|incidens|riasztás)/i;
+  function mer() {
+    var s = $("kr").value.trim(), o = [];
+    if (!s) { $("krv").textContent = "Írj be egy kritériumot."; $("krv").style.color = "var(--muted)"; return; }
+    var szam = /\d/.test(s), mert = MINT.test(s), rel = /(≤|>=|<=|≥|<|>|legfeljebb|legalább|alatt|felett|kevesebb|több)/i.test(s), hol = /(game day|védés|ügyeleti nap|naponta|teszt|bemutató|átlag)/i.test(s);
+    o.push((szam ? "✅" : "❌") + " van benne szám");
+    o.push((mert ? "✅" : "❌") + " van mértékegysége");
+    o.push((rel ? "✅" : "❌") + " van küszöbe (≤, legalább…)");
+    o.push((hol ? "✅" : "➖") + " tudjuk, mikor mérjük");
+    var ok = szam && mert && rel;
+    $("krv").innerHTML = (ok ? "<b style='color:var(--green)'>Mérhető.</b> " : "<b style='color:var(--amber)'>Még nem mérhető.</b> ") + o.join(" · ");
+    $("krv").style.color = "";
+  }
+  $("kr").addEventListener("input", mer);
+  document.querySelectorAll("[data-k]").forEach(function (b) { b.addEventListener("click", function () { $("kr").value = b.getAttribute("data-k"); mer(); }); });
+  mer();
+  document.querySelectorAll(".card-q").forEach(function (c) {
+    var t = function () { c.classList.toggle("open"); };
+    c.addEventListener("click", t);
+    c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); t(); } });
+  });
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>12. blokk – Elszálló felhőszámla · L3 előléptetési vizsga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .hexbox { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+  .hexbox input { width: 100%; font-family: var(--mono); font-size: 15px; padding: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+  .hexout { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--amber); padding: 12px; border-radius: 8px; border: 1px dashed var(--line); min-height: 52px; word-break: break-all; }
+  .cmp .card8 p.muted { font-size: 15px; }
+  .check li { list-style: none; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .check label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .check input { accent-color: var(--amber); width: 18px; height: 18px; margin-top: 3px; }
+
+
+  .stack { display: flex; height: 34px; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); }
+  .stack div { height: 100%; transition: flex-grow .3s; }
+
+  @media (max-width: 860px) {
+    .hexbox { grid-template-columns: 1fr; }
+    .head .wrap, .tune, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 100px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot" style="color:var(--amber);">●</span> BOLYAI NET · NOC · 12. MŰSZAK · 3. MÉRFÖLDKŐ</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow" style="color:var(--amber);">12. blokk · 3. mérföldkő · L3 előléptetési vizsga</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Elszálló <span>felhőszámla</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">Felhő/Költség</span>
+        <span class="chip">30 pont · szintlépés 18-tól</span>
+        <span class="chip">Felhő-könyvelő jelvény 24-től</span>
+      </div>
+    </div>
+    <div class="ticket handover" style="border-left-color:var(--amber);">
+      <span class="label" style="color:var(--amber);">#BN-0400 · P2 · nyitott</span>
+      <p>„A felhőszámla szeptemberben kb. 1200 € volt, októberben majdnem 2800 €. Mi történt? Mennyit tudunk spórolni, úgy, hogy a Moodle ne lassuljon le?” – igazgató</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A vizsgán ezt mutatod meg</p><h2>Négy dolog, amit egy AIOps-mérnök jelölt tud</h2></div>
+    <ol class="goals">
+      <li>Egy felhőszámlát tételekre bontasz, és megmondod, hol folyik el a pénz.</li>
+      <li>Kimutatod, ha az automatikus skálázás rosszul működik, és kiszámolod, mennyibe került.</li>
+      <li>A heti ritmusból előre ütemezed a gépeket (prediktív skálázás), és megtalálod a forgalmi tüskét.</li>
+      <li>Kimutatható megtakarítást számolsz, és szakszavak nélkül elmagyarázod a vezetőségnek.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Eligazítás, majd vizsga</h2></div>
+    <div class="timeline" style="grid-template-columns:9fr 25fr 7fr 55fr;">
+      <div class="seg e"><b>0–5</b><h3>Átadás</h3><p>A jegy</p></div>
+      <div class="seg e"><b>5–30</b><h3>Eligazítás</h3><p>Felhőköltség, autoscaling, prediktív skálázás, tétlen erőforrások, forgalom</p></div>
+      <div class="seg qz"><b>30–35</b><h3>Szabályok</h3><p>Feladatok</p></div>
+      <div class="seg g"><b>35–90</b><h3>Vizsga</h3><p>Egyéni elemzés, 30 pont, közben káoszkártya</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="kalkulator">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: felhőszámla-kalkulátor</p>
+      <h2>Mibe kerül egy hónap?</h2>
+      <p>Gyakorló számoló a vizsga áraival: példány 0,19 €/óra, kimenő forgalom 0,08 €/GB, egy GPU-gép 2,40 €/óra. Egy hónap 30 nap. Állítsd be, és figyeld, melyik tétel nő a leggyorsabban.</p>
+    </div>
+    <div class="lab">
+      <div class="tool">
+        <div class="row"><label for="kn">nappal (8–22) gépek</label><input type="range" id="kn" min="2" max="12" step="1" value="6"><output id="kno"></output></div>
+        <div class="row"><label for="ke">éjjel (22–8) gépek</label><input type="range" id="ke" min="2" max="12" step="1" value="2"><output id="keo"></output></div>
+        <div class="row"><label for="kg">GPU-gép (nap)</label><input type="range" id="kg" min="0" max="30" step="1" value="0"><output id="kgo"></output></div>
+        <div class="row"><label for="kf">kimenő forgalom / nap</label><input type="range" id="kf" min="50" max="1000" step="50" value="250"><output id="kfo"></output></div>
+        <div class="stack" id="stack" aria-hidden="true"></div>
+        <div class="legend"><span><i style="background:#4CC3D9"></i>nappali gépek</span><span><i style="background:#2A7F9E"></i>éjjeli gépek</span><span><i style="background:#F0A830"></i>GPU-gép</span><span><i style="background:#8FA3B3"></i>forgalom</span></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">Havi költség</span>
+        <span class="big" id="kt"></span>
+        <span class="k">Ebből</span>
+        <span class="mid" id="kr" style="font-size:15px;line-height:1.7;"></span>
+        <p class="verdict" id="kv"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="skala">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: háromféle skálázás</p>
+      <h2>Olcsó, gyors, vagy mindkettő?</h2>
+      <p>Egy kitalált tanítási nap terhelése óránként. Válaszd ki a skálázás módját. A reaktív egy órát késik, ezért a reggeli felfutásnál lassú lehet; a hibás nem skáláz le; az ütemezett előre tudja, mi jön.</p>
+    </div>
+    <div class="lab">
+      <div class="tool">
+        <div class="toggle" role="group" aria-label="Skálázási mód">
+          <button type="button" data-m="reakt" aria-pressed="true">Reaktív</button>
+          <button type="button" data-m="hibas" aria-pressed="false">Nincs leskálázás</button>
+          <button type="button" data-m="utem" aria-pressed="false">Ütemezett (+20%)</button>
+        </div>
+        <svg class="chart" id="sk" viewBox="0 0 760 260" role="img" aria-label="Egy nap óránkénti igénye és a futó gépek száma"></svg>
+        <div class="legend"><span><i style="background:#4CC3D9"></i>szükséges gépek</span><span><i style="background:#F0A830"></i>futó gépek</span><span><i style="background:#F26B5B"></i>lassú óra (kevés a gép)</span></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">Egy nap költsége</span>
+        <span class="big" id="st"></span>
+        <span class="k">Lassú órák</span>
+        <span class="mid" id="sl"></span>
+        <p class="verdict" id="sv"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="vizsga">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">A vizsga · egyéni · 55 perc · 30 pont</p>
+      <h2>Hét feladat a felhő könyvelőjének</h2>
+      <p>A vizsgafüzetet az oktatótól kapod. Használható: a saját korábbi munkafüzeteid, a puskák és a dokumentáció. Nem használható: MI-asszisztens és mások munkája.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Feladat</th><th>Amit tudnod kell hozzá</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">F1</td><td><b>A számla felbontása</b></td><td>szűrés hónapra, összeg × egységár, futási órák</td><td class="num">3</td></tr>
+          <tr><td class="num">F2</td><td><b>A skálázás hibája</b></td><td>np.ceil, np.clip, tényleges − ideális</td><td class="num">5</td></tr>
+          <tr><td class="num">F3</td><td><b>Elfelejtett erőforrások</b></td><td>szűrés dátumra; mit teszünk velük</td><td class="num">4</td></tr>
+          <tr><td class="num">F4</td><td><b>Prediktív skálázás</b></td><td>heti profil: groupby(weekday, hour) (6. blokk)</td><td class="num">5</td></tr>
+          <tr><td class="num">F5</td><td><b>A forgalmi tüske</b></td><td>napi összeg, alapvonal, z-pontszám (7. és 11. blokk)</td><td class="num">5</td></tr>
+          <tr><td class="num">F6</td><td><b>Havi megtakarítás</b></td><td>a fentiek összerakása</td><td class="num">3</td></tr>
+          <tr><td class="num">F7</td><td><b>Postmortem + vezetői összefoglaló</b></td><td>hibáztatásmentesen, szakszavak nélkül</td><td class="num">5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Szintlépés AIOps-mérnök jelöltté: legalább 18 pont · Felhő-könyvelő jelvény: legalább 24 pont · Pótvizsga: egyszer, más adattal.</p>
+  </div>
+</section>
+
+<section class="block" id="kesz">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Ellenőrzőlista</p><h2>Készen állsz?</h2></div>
+    <ul class="check" style="padding:0;">
+      <li><label><input type="checkbox">Ki tudom számolni, hány órát futott egy gép egy hónapban, ha a hónap közben indult.</label></li>
+      <li><label><input type="checkbox">Tudom, miért np.ceil és nem round: fél gépet nem lehet indítani.</label></li>
+      <li><label><input type="checkbox">Meg tudok írni egy groupby-t két kulccsal (a hét napja és az óra).</label></li>
+      <li><label><input type="checkbox">A 7. vagy a 11. blokk füzetéből elő tudom venni az alapvonalas z-pontszámot.</label></li>
+      <li><label><input type="checkbox">Tudom, miért nem törlünk azonnal egy tétlen gépet.</label></li>
+      <li><label><input type="checkbox">Ötször el tudom mondani ugyanazt: egyszer mérnöknek, egyszer igazgatónak.</label></li>
+    </ul>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/UeWX1Y546YjefdxB6jPdti">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 13. blokk</p>
+        <h3>A hálózat peremén – Edge</h3>
+        <p class="muted">Mikor érdemes az adatot helyben feldolgozni, és nem a felhőbe küldeni?</p>
+      </div>
+      <a class="btn" href="blokk-13.html">Tovább a 13. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const eur = x => Math.round(x).toLocaleString('hu-HU') + ' €';
+// 1. kalkulátor
+function kalk() {
+  const n = +document.getElementById('kn').value, e = +document.getElementById('ke').value, g = +document.getElementById('kg').value, f = +document.getElementById('kf').value;
+  document.getElementById('kno').textContent = n + ' db'; document.getElementById('keo').textContent = e + ' db';
+  document.getElementById('kgo').textContent = g + ' nap'; document.getElementById('kfo').textContent = f + ' GB';
+  const t = [['nappali gépek', n * 14 * 30 * 0.19, '#4CC3D9'], ['éjjeli gépek', e * 10 * 30 * 0.19, '#2A7F9E'], ['GPU-gép', g * 24 * 2.40, '#F0A830'], ['forgalom', f * 30 * 0.08, '#8FA3B3']];
+  const sum = t.reduce((a, x) => a + x[1], 0);
+  document.getElementById('kt').textContent = eur(sum);
+  document.getElementById('kr').innerHTML = t.map(x => `${x[0]}: ${eur(x[1])}`).join('<br>');
+  document.getElementById('stack').innerHTML = t.map(x => `<div style="flex-grow:${x[1]};background:${x[2]}"></div>`).join('');
+  const nagy = t.slice().sort((a, b) => b[1] - a[1])[0];
+  let v = 'A legnagyobb tétel: ' + nagy[0] + '.';
+  if (e > 2) v += ` Éjjel ${e - 2} géppel több fut a minimumnál: ez havonta ${eur((e - 2) * 10 * 30 * 0.19)}, amit valószínűleg senki nem használ.`;
+  if (g > 0) v += ` Egy elfelejtett GPU-gép ${g} nap alatt ${eur(g * 24 * 2.4)}.`;
+  document.getElementById('kv').textContent = v;
+}
+['kn', 'ke', 'kg', 'kf'].forEach(i => document.getElementById(i).addEventListener('input', kalk));
+kalk();
+
+// 2. háromféle skálázás (kitalált nap)
+const IGENY = [2, 2, 2, 2, 2, 2, 2, 5, 8, 8, 8, 8, 8, 7, 7, 5, 4, 4, 4, 4, 3, 3, 2, 2];
+let mod = 'reakt';
+function skala() {
+  let fut = [];
+  if (mod === 'reakt') fut = IGENY.map((x, h) => h === 0 ? x : IGENY[h - 1]);
+  if (mod === 'hibas') { let m = 2; fut = IGENY.map((x, h) => (m = Math.max(m, h === 0 ? x : IGENY[h - 1]))); }
+  if (mod === 'utem') fut = IGENY.map(x => Math.min(12, Math.max(2, Math.ceil(x * 1.2))));
+  const lassu = fut.filter((x, h) => x < IGENY[h]).length, ktg = fut.reduce((a, b) => a + b, 0) * 0.19;
+  document.getElementById('st').textContent = ktg.toFixed(2).replace('.', ',') + ' €';
+  document.getElementById('sl').textContent = lassu ? lassu + ' óra' : '0 · gyors';
+  document.getElementById('sv').textContent = mod === 'reakt' ? 'Olcsó, de a reggeli felfutásnál két órán át kevés a gép: a Moodle lassú, amikor mindenki belép.'
+    : mod === 'hibas' ? 'Reggel ugyanúgy késik, mint a reaktív, de utána délután és éjjel is 8 gép fut: drágább, és semmivel sem gyorsabb. Ez a mai vizsga egyik hibája.'
+    : 'Előre tudja, mi jön: nincs lassú óra. A 20% ráhagyás miatt drágább a reaktívnál, de olcsóbb a hibásnál. A gyakorlatban a kettőt együtt használják: ütemezés a megszokottra, reaktív a váratlanra.';
+  document.querySelectorAll('#skala .toggle button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === mod));
+  const X0 = 30, X1 = 740, Y0 = 225, Y1 = 12, w = (X1 - X0) / 24, y = v => Y0 - (Y0 - Y1) * v / 12;
+  let s = '';
+  [2, 4, 6, 8, 10, 12].forEach(g => s += `<line x1="${X0}" x2="${X1}" y1="${y(g)}" y2="${y(g)}" stroke="#2A3C4B"/><text x="${X0 - 6}" y="${y(g) + 4}" fill="#8FA3B3" font-size="11" text-anchor="end" font-family="JetBrains Mono, monospace">${g}</text>`);
+  IGENY.forEach((x, h) => {
+    s += `<rect x="${X0 + h * w + 2}" y="${y(fut[h])}" width="${w - 4}" height="${Y0 - y(fut[h])}" fill="${fut[h] < x ? '#F26B5B' : '#F0A830'}" opacity=".85"/>`;
+    s += `<line x1="${X0 + h * w + 1}" x2="${X0 + (h + 1) * w - 1}" y1="${y(x)}" y2="${y(x)}" stroke="#4CC3D9" stroke-width="4"/>`;
+    if (h % 3 === 0) s += `<text x="${X0 + h * w + 2}" y="${Y0 + 20}" fill="#8FA3B3" font-size="11" font-family="JetBrains Mono, monospace">${h}:00</text>`;
+  });
+  document.getElementById('sk').innerHTML = s;
+}
+document.querySelectorAll('#skala .toggle button').forEach(b => b.addEventListener('click', () => { mod = b.dataset.m; skala(); }));
+skala();
+</script>
+</body>
+</html>

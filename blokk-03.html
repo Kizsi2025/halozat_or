@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3. blokk – Logvallatás</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(44px, 7vw, 84px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 15fr 55fr 10fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); }
+  .seg.g { border-top-color: var(--green); }
+  .seg.n { border-top-color: var(--amber); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; }
+  .seg p { font-size: 14px; color: var(--muted); }
+
+  .chartbox { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .chart-title { font-family: var(--display); font-size: 22px; font-weight: 600; }
+  #chart { width: 100%; height: auto; display: block; }
+  .controls { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; }
+  .controls label { font-family: var(--mono); font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  input[type=range] { accent-color: var(--amber); width: 220px; }
+  .seg-btns { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg-btns button { font-family: var(--mono); font-size: 13px; font-weight: 600; padding: 8px 14px; background: var(--panel-2); color: var(--muted); border: none; cursor: pointer; }
+  .seg-btns button[aria-pressed="true"] { background: var(--amber); color: var(--night); }
+  .readout { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .ro { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .ro b { display: block; font-family: var(--mono); font-size: 26px; color: var(--amber); font-variant-numeric: tabular-nums; }
+  .ro span { font-size: 13.5px; color: var(--muted); }
+
+  .rubric { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .rubric li { display: flex; gap: 14px; align-items: flex-start; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
+  .rubric input { width: 20px; height: 20px; accent-color: var(--green); margin-top: 3px; flex: none; }
+  .rubric label { flex: 1; cursor: pointer; }
+  .rubric .pts { font-family: var(--mono); color: var(--amber); font-weight: 700; white-space: nowrap; }
+  .rubric small { display: block; color: var(--muted); font-size: 13.5px; }
+  .total { font-family: var(--mono); font-size: 18px; margin-top: 12px; }
+  .total b { color: var(--amber); font-size: 26px; }
+
+  .blades { grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr)); }
+  .blade { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; overflow: hidden; }
+  .blade-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 18px 0; }
+  .blade-head h3 { font-size: 20px; }
+  .blade p.note { padding: 0 18px 16px; color: var(--muted); font-size: 15px; }
+  pre.code { margin: 12px 18px; background: #0A131B; border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; font-family: var(--mono); font-size: 13.5px; line-height: 1.55; color: var(--snow); overflow-x: auto; }
+  pre.code .c { color: #7F93A3; }
+  .copy { font-family: var(--mono); font-size: 12px; padding: 5px 10px; border-radius: 5px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .copy:hover { color: var(--snow); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .head .wrap { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 3. MŰSZAK</span>
+  <span><a href="blokk-02.html">← 2. blokk</a> · <a href="index.html">Hálózat-őr főoldal</a> · <a href="blokk-04.html">4. blokk →</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">3. blokk · „A” modul · L1 ügyeletes szint</p>
+      <h1>Logvallatás: <span>Pandas és Matplotlib</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">teljes labor</span>
+        <span class="chip">Telemetria-rajzolási feladat</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0212 · P3 · nyitott</span>
+      <p>„Most egy ábrát kérnék: mi van a tűzfallal, és mikor volt éjjel a legtöbb riasztás?” – igazgatóhelyettes. Csatolmány: bolyai_metrics.csv, 2592 sor.</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>CSV-fájlt és szöveges naplót Pandas-táblázatba olvasol.</li>
+      <li>Megtalálod a hibás típusú oszlopot, és kezeled a hiányzó és lehetetlen értékeket.</li>
+      <li>Szűrsz, csoportosítasz és átlagolsz napi és óránkénti bontásban.</li>
+      <li>Állítást megfogalmazó grafikont rajzolsz küszöbvonallal, és figyelsz az időzónára.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Rövid bemutató, hosszú labor</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–25</b><h3>Bemutató</h3><p>Pandas, hibakeresés, Matplotlib</p></div>
+      <div class="seg g"><b>25–80</b><h3>Labor</h3><p>Hat küldetés párban, a 45. percben káoszkártya</p></div>
+      <div class="seg n"><b>80–90</b><h3>NOC-fal</h3><p>Grafikonok a kivetítőn</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="kuszob">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: a riasztási küszöb</p>
+      <h2>Hol húzzuk meg a vonalat?</h2>
+      <p>A fő tűzfal óránkénti átlagos CPU-terhelése három napon át. Mozgasd a küszöböt, és nézd meg, hány órában szólna a riasztás. Ha túl alacsony, folyton csipog. Ha túl magas, a bajt is lekési.</p>
+    </div>
+    <div class="chartbox">
+      <p class="chart-title">A fő tűzfal CPU-terhelése három napja folyamatosan nő</p>
+      <svg id="chart" viewBox="0 0 1000 340" role="img" aria-label="A fw-main óránkénti átlagos CPU-terhelése 2026. november 10. és 12. között, 37 és 95 százalék között, növekvő trenddel"></svg>
+      <div class="controls">
+        <label for="thr">Küszöb: <span id="thr-val" class="mono" style="color:var(--amber);font-weight:700;">90%</span>
+          <input id="thr" type="range" min="60" max="98" step="1" value="90"></label>
+        <span class="seg-btns" role="group" aria-label="Időzóna">
+          <button type="button" id="tz-local" aria-pressed="true">Helyi idő (CET)</button>
+          <button type="button" id="tz-utc" aria-pressed="false">UTC</button>
+        </span>
+      </div>
+      <div class="readout" aria-live="polite">
+        <div class="ro"><b id="ro-hours">0</b><span>óra a küszöb felett (a 72-ből)</span></div>
+        <div class="ro"><b id="ro-first">–</b><span>az első átlépés órája</span></div>
+        <div class="ro"><b>54,9 → 70,7 → 84,1</b><span>napi átlag (%), 11-10 → 11-12</span></div>
+      </div>
+      <p class="muted" style="font-size:14px;">Óránkénti átlagok a gyakorló adatból. A labor 5 percenkénti mérésekkel dolgozik, ezért ott az első átlépés percre pontosan is meghatározható.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="pandas">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Bemutató · kimásolható kódok</p>
+      <h2>A Pandas és a Matplotlib alapmozdulatai</h2>
+    </div>
+    <div class="grid blades">
+      <div class="blade">
+        <div class="blade-head"><h3>Beolvasás és első pillantás</h3><button class="copy" type="button" data-for="k1">Másolás</button></div>
+<pre class="code" id="k1">import pandas as pd
+df = pd.read_csv("bolyai_metrics.csv")
+print(df.head())     <span class="c"># az első 5 sor</span>
+print(df.shape)      <span class="c"># (sorok, oszlopok)</span>
+df.info()            <span class="c"># oszlopok típusa, hiányzó cellák</span></pre>
+        <p class="note">Az info() az első lépés, ha valami nem úgy számol, ahogy várod.</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>Szűrés és csoportosítás</h3><button class="copy" type="button" data-for="k2">Másolás</button></div>
+<pre class="code" id="k2">fw = df[df["eszkoz"] == "fw-main"]                 <span class="c"># csak a tűzfal</span>
+print(df.groupby("eszkoz")["forgalom_mbps"].mean())  <span class="c"># eszközönkénti átlag</span>
+print(df["eszkoz"].value_counts())                  <span class="c"># darabszám</span></pre>
+        <p class="note">A groupby a 2. blokk Counteres ciklusát egy sorban elvégzi.</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>Típus és idő</h3><button class="copy" type="button" data-for="k3">Másolás</button></div>
+<pre class="code" id="k3">df["cpu_szazalek"] = pd.to_numeric(df["cpu_szazalek"], errors="coerce")
+df["ido_utc"] = pd.to_datetime(df["ido_utc"])
+df["ido_helyi"] = df["ido_utc"] + pd.Timedelta(hours=1)
+print(df["ido_helyi"].dt.hour.head())</pre>
+        <p class="note">Ami nem szám, abból NaN lesz. A helyi idő a magyar téli időszámítás (CET).</p>
+      </div>
+      <div class="blade">
+        <div class="blade-head"><h3>NOC-grafikon</h3><button class="copy" type="button" data-for="k4">Másolás</button></div>
+<pre class="code" id="k4">import matplotlib.pyplot as plt
+fig, ax = plt.subplots(figsize=(12, 4))
+ax.plot(fw["ido_utc"], fw["cpu_szazalek"], label="fw-main CPU")
+ax.axhline(90, color="red", linestyle="--", label="Küszöb (90%)")
+ax.set_title("Mit állít a grafikon?")
+ax.set_xlabel("Idő"); ax.set_ylabel("CPU-terhelés (%)")
+ax.legend()
+plt.savefig("fw_main_cpu.png", dpi=150)   <span class="c"># a show() előtt!</span>
+plt.show()</pre>
+        <p class="note">Az időtengely feliratán jelöld, melyik időzónában vagy.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="pontozolap">
+  <div class="wrap">
+    <div class="grid g2" style="align-items:start;">
+      <div class="sec-head" style="margin-bottom:0;">
+        <p class="eyebrow">Telemetria-rajzolási feladat · 10 pont</p>
+        <h2>Ellenőrizd a grafikonod, mielőtt beadod</h2>
+        <p>Pipáld ki, ami teljesül. A pipák csak nálad, ebben a böngészőben látszanak; a pontot az oktató adja meg.</p>
+      </div>
+      <div>
+        <ul class="rubric" id="rubric">
+          <li><input type="checkbox" id="r1" data-p="2"><label for="r1">A cím állít valamit<small>„A tűzfal CPU-ja három napja nő”, nem „Grafikon”</small></label><span class="pts">2</span></li>
+          <li><input type="checkbox" id="r2" data-p="2"><label for="r2">Tengelyfeliratok mértékegységgel<small>Idő (helyi), CPU-terhelés (%)</small></label><span class="pts">2</span></li>
+          <li><input type="checkbox" id="r3" data-p="2"><label for="r3">A 90%-os küszöb szaggatott vonallal</label><span class="pts">2</span></li>
+          <li><input type="checkbox" id="r4" data-p="2"><label for="r4">Helyes időzóna, jelölve<small>A káoszkártya után helyi időre javítva</small></label><span class="pts">2</span></li>
+          <li><input type="checkbox" id="r5" data-p="1"><label for="r5">Jelmagyarázat</label><span class="pts">1</span></li>
+          <li><input type="checkbox" id="r6" data-p="1"><label for="r6">Olvasható méret, PNG-be mentve</label><span class="pts">1</span></li>
+        </ul>
+        <p class="total">Önellenőrzés: <b id="rubric-total">0</b> / 10</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Labor · 55 perc · párban</p>
+      <h2>Hat küldetés, mindegyik egy hibajegy</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Ments másolatot a Drive-ra, és futtasd le először a két szürke cellát.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Küldetés</th><th>Feladat</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Beolvasás</b></td><td>Olvasd be a CSV-t, nézd meg az első sorokat és a méretét.</td></tr>
+          <tr><td class="num">M2</td><td><b>Hibakeresés: miért nem számol?</b></td><td>Derítsd ki, miért nem átlagolható a CPU-oszlop, és javítsd.</td></tr>
+          <tr><td class="num">M3</td><td><b>Három nap, három szám</b></td><td>A tűzfal napi átlagos CPU-terhelése. Igaz volt a #BN-0202?</td></tr>
+          <tr><td class="num">M4</td><td><b>Telemetria-rajzolás (értékelt)</b></td><td>Vonaldiagram küszöbvonallal, mentés PNG-be.</td></tr>
+          <tr><td class="num">M5</td><td><b>A napló is táblázat lehet</b></td><td>Óránkénti WARNING és ERROR sorok oszlopdiagramon. Melyik órában volt a legtöbb?</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz: mi lesz holnap?</b></td><td>Trendvonal a napi átlagokra és becslés a következő napra.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>A bemutató diái</h3>
+        <p class="muted">A 12 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/KZ8uGc6oBhKqEd5wtYibYM">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow" style="color:var(--cyan);">Következő műszak · 4. blokk</p>
+        <h3>Honnan jön a jel? Telemetria-források</h3>
+        <p class="muted">Syslog, NetFlow és SNMP, és miért fontos, hogy minden eszköz órája egyezzen.</p>
+      </div>
+      <a class="btn ghost" href="blokk-04.html">4. blokk megnyitása →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="blokk-02.html" style="color:inherit;">← 2. blokk</a> · <a href="index.html" style="color:inherit;">Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+// Másolás
+document.querySelectorAll('.copy').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const txt = document.getElementById(btn.dataset.for).innerText;
+    try { await navigator.clipboard.writeText(txt); btn.textContent = 'Kimásolva ✓'; }
+    catch (e) { btn.textContent = 'Jelöld ki és másold'; }
+    setTimeout(() => { btn.textContent = 'Másolás'; }, 1800);
+  });
+});
+
+// Küszöb-grafikon (óránkénti átlag, helyi idő: 2026-11-10 01:00 – 2026-11-13 00:00)
+const V = [36.9,38.8,40.7,43.8,45.7,48.8,52.9,54.8,58.3,60.5,63.0,64.2,65.6,65.4,64.5,63.7,63.3,59.2,57.5,56.2,54.6,53.1,51.7,53.0,53.6,54.2,57.0,59.2,62.7,65.2,68.5,72.5,74.9,76.4,79.4,80.5,81.1,79.8,81.4,79.9,76.4,75.6,72.1,71.2,69.6,68.7,67.6,67.3,67.7,68.1,71.2,73.0,75.8,79.5,82.1,84.8,88.4,90.5,92.0,94.4,94.2,94.6,93.1,92.3,90.8,88.8,87.0,83.5,82.7,81.4,81.0,80.6];
+const svg = document.getElementById('chart');
+const NS = 'http://www.w3.org/2000/svg';
+const W = 1000, H = 340, L = 52, R = 16, T = 14, B = 44;
+const x = i => L + (W - L - R) * i / (V.length - 1);
+const y = v => T + (H - T - B) * (1 - v / 100);
+let tz = 'local';
+function el(n, a) { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); return e; }
+function hourLabel(i) {
+  const d = new Date(Date.UTC(2026, 10, 10, 1 + i - (tz === 'utc' ? 1 : 0)));
+  return String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0') + ' ' + String(d.getUTCHours()).padStart(2, '0') + ':00';
+}
+function draw() {
+  const thr = +document.getElementById('thr').value;
+  document.getElementById('thr-val').textContent = thr + '%';
+  svg.innerHTML = '';
+  const css = getComputedStyle(document.documentElement);
+  const line = css.getPropertyValue('--line').trim(), muted = css.getPropertyValue('--muted').trim();
+  const cyan = css.getPropertyValue('--cyan').trim(), amber = css.getPropertyValue('--amber').trim(), red = css.getPropertyValue('--red').trim();
+  [0, 20, 40, 60, 80, 100].forEach(g => {
+    svg.appendChild(el('line', { x1: L, x2: W - R, y1: y(g), y2: y(g), stroke: line, 'stroke-width': 1 }));
+    const t = el('text', { x: L - 8, y: y(g) + 4, fill: muted, 'font-size': 12, 'text-anchor': 'end', 'font-family': 'JetBrains Mono, monospace' }); t.textContent = g + '%'; svg.appendChild(t);
+  });
+  [0, 23, 47, 71].forEach(i => {
+    const t = el('text', { x: x(i), y: H - 18, fill: muted, 'font-size': 12, 'text-anchor': i === 0 ? 'start' : (i === 71 ? 'end' : 'middle'), 'font-family': 'JetBrains Mono, monospace' });
+    t.textContent = hourLabel(i); svg.appendChild(t);
+  });
+  const ax = el('text', { x: W - R, y: H - 2, fill: muted, 'font-size': 12, 'text-anchor': 'end', 'font-family': 'JetBrains Mono, monospace' });
+  ax.textContent = 'Idő (' + (tz === 'utc' ? 'UTC' : 'helyi, CET') + ')'; svg.appendChild(ax);
+  // a küszöb feletti szakaszok kiemelése
+  V.forEach((v, i) => { if (v > thr) svg.appendChild(el('rect', { x: x(i) - (W - L - R) / (V.length - 1) / 2, y: T, width: (W - L - R) / (V.length - 1), height: H - T - B, fill: amber, opacity: .14 })); });
+  const area = 'M' + x(0) + ',' + y(0) + ' ' + V.map((v, i) => 'L' + x(i) + ',' + y(v)).join(' ') + ' L' + x(V.length - 1) + ',' + y(0) + 'Z';
+  svg.appendChild(el('path', { d: area, fill: cyan, opacity: .10 }));
+  svg.appendChild(el('path', { d: 'M' + V.map((v, i) => x(i) + ',' + y(v)).join(' L'), fill: 'none', stroke: cyan, 'stroke-width': 2.5, 'stroke-linejoin': 'round' }));
+  svg.appendChild(el('line', { x1: L, x2: W - R, y1: y(thr), y2: y(thr), stroke: red, 'stroke-width': 2, 'stroke-dasharray': '7 6' }));
+  const tl = el('text', { x: L + 8, y: y(thr) - 7, fill: red, 'font-size': 12.5, 'font-weight': 700, 'font-family': 'JetBrains Mono, monospace' });
+  tl.textContent = 'Küszöb ' + thr + '%'; svg.appendChild(tl);
+  const over = V.filter(v => v > thr).length;
+  const fi = V.findIndex(v => v > thr);
+  document.getElementById('ro-hours').textContent = over;
+  document.getElementById('ro-first').textContent = fi < 0 ? 'nincs' : hourLabel(fi);
+  if (fi >= 0) svg.appendChild(el('circle', { cx: x(fi), cy: y(V[fi]), r: 5, fill: amber, stroke: '#0A131B', 'stroke-width': 2 }));
+}
+document.getElementById('thr').addEventListener('input', draw);
+document.getElementById('tz-local').addEventListener('click', () => { tz = 'local'; setTz(); });
+document.getElementById('tz-utc').addEventListener('click', () => { tz = 'utc'; setTz(); });
+function setTz() {
+  document.getElementById('tz-local').setAttribute('aria-pressed', tz === 'local');
+  document.getElementById('tz-utc').setAttribute('aria-pressed', tz === 'utc');
+  draw();
+}
+draw();
+
+// Pontozólap
+const rb = document.querySelectorAll('#rubric input');
+function total() { let s = 0; rb.forEach(c => { if (c.checked) s += +c.dataset.p; }); document.getElementById('rubric-total').textContent = s;
+  try { localStorage.setItem('hor-b3-rubric', JSON.stringify([...rb].map(c => c.checked))); } catch (e) {} }
+try { const st = JSON.parse(localStorage.getItem('hor-b3-rubric') || '[]'); rb.forEach((c, i) => { c.checked = !!st[i]; }); } catch (e) {}
+rb.forEach(c => c.addEventListener('change', total));
+total();
+</script>
+</body>
+</html>

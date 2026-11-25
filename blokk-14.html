@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>14. blokk – Az első vonal: chatbot és jegytriázs · Hálózat-őr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+
+  .arch { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .arch .lay { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .arch .lay.edge { border-color: var(--amber); border-width: 2px; }
+  .arch .arr { align-self: center; font-family: var(--mono); color: var(--muted); font-size: 22px; }
+  .arch h3 { font-size: 20px; }
+  .ok { color: #5CC98A; } .no { color: var(--red); }
+
+  
+  .tri { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; }
+  .tri textarea { width: 100%; min-height: 96px; font-family: var(--mono); font-size: 15px; padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); resize: vertical; }
+  .samples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .samples button, .choices button { font-size: 13.5px; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; text-align: left; }
+  .samples button:hover, .choices button:hover { border-color: var(--cyan); }
+  .kw { display: grid; gap: 6px; }
+  .kw div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; font-size: 13.5px; padding: 6px 8px; border-radius: 6px; }
+  .kw div.hit { background: rgba(240,168,48,.14); outline: 1px solid var(--amber); }
+  .kw code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .kw mark, .hl mark { background: var(--amber); color: #16222C; border-radius: 3px; padding: 0 2px; }
+  .hl { font-family: var(--mono); font-size: 14px; line-height: 1.6; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; min-height: 48px; word-break: break-word; }
+  .chat { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; }
+  .log { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 320px; max-height: 460px; overflow-y: auto; }
+  .msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 15px; line-height: 1.45; }
+  .msg.b { background: var(--panel-2); border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg.u { background: var(--cyan); color: #16222C; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.sys { align-self: center; font-family: var(--mono); font-size: 12px; color: var(--muted); background: none; padding: 2px; }
+  .choices { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .choices button.esc { border-color: var(--amber); color: var(--amber); }
+  .state { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; align-self: start; }
+  .state .k { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .state .v { font-family: var(--mono); font-size: 15px; color: var(--snow); }
+  .rules { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+  .rules li::before { content: "○ "; color: var(--muted); }
+  .rules li.done::before { content: "● "; color: #5CC98A; }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .flow .st { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .flow .st.hot { border-top-color: var(--amber); }
+  .flow h3 { font-size: 18px; }
+
+  @media (max-width: 860px) {
+    .tri, .chat, .flow { grid-template-columns: 1fr; }
+    .head .wrap, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .msg { max-width: 92%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 14. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">14. blokk · „C” modul · AIOps-mérnök jelölt</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Az első vonal <span>Chatbot és jegytriázs</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Dialógustervező feladat</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0420 · P3 · nyitott</span>
+      <p>„Naponta kb. 200 bejelentés jön e-mailben és Teamsen. A jegyek egy része rossz sorba kerül, és két nap, mire valaki ránéz. Kellene egy chatbot az első vonalra, és egy automatikus jegyosztályozó!” – szervizpult-vezető</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Megnevezed egy szervizpult-chatbot részeit: szándék, adatok, válasz, emberi átadás.</li>
+      <li>Hibajegyeket kategorizálsz kulcsszavas szabállyal és tanult modellel, és összeveted őket.</li>
+      <li>Bizonyossági küszöbbel eldöntöd, melyik jegy mehet automatikusan, és melyik emberhez.</li>
+      <li>Dialógustervet készítesz vészkijárattal, a biztonsági tilalmak betartásával.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Chatbot felépítése, triázs, küszöb, dialógus, határok</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Triázs és dialógusterv, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Egy párbeszéd eljátszása</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="felepites">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Egy chatbot felépítése</p>
+      <h2>Négy rész, és a negyedik a legfontosabb</h2>
+      <p>A rossz chatbot nem az, amelyik nem tud valamit, hanem az, amelyik nem engedi ki a felhasználót.</p>
+    </div>
+    <div class="flow">
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">1 · SZÁNDÉK</span><h3>Mit akar?</h3><p class="muted">„nem nyomtat” → nyomtatóhiba</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">2 · ADATOK</span><h3>Mi kell hozzá?</h3><p class="muted">melyik terem, mit lát a kijelzőn</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">3 · VÁLASZ</span><h3>Lépésenként</h3><p class="muted">egy kérdés egyszerre, ellenőrzéssel</p></div>
+      <div class="st hot"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">4 · ÁTADÁS</span><h3>Ember, jegyszámmal</h3><p class="muted">ha elakad, ha kérik, ha kényes</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="triazs">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: kulcsszavas triázs</p>
+      <h2>Hova kerül a jegy?</h2>
+      <p>Ugyanaz a <span class="mono">KULCSSZAVAK</span> szabály, mint a munkafüzetben: kisbetűsít, és az <b>első</b> olyan kategóriát adja, amelynek valamelyik kulcsszava benne van a szövegben. Írj be bejelentést, vagy próbáld ki a mintákat. Hol hibázik?</p>
+    </div>
+    <div class="tri">
+      <div>
+        <label for="tx" class="k mono" style="font-size:12px;color:var(--muted);">BEJELENTÉS SZÖVEGE</label>
+        <textarea id="tx">Nem nyomtat a B12-es nyomtató, pirosan villog.</textarea>
+        <div class="samples" id="samp"></div>
+        <div class="toggle" role="group" aria-label="Ékezet" style="margin-top:14px;">
+          <button type="button" id="n0" aria-pressed="true">Szabály, ahogy van</button>
+          <button type="button" id="n1" aria-pressed="false">Ékezetek nélkül összevetve</button>
+        </div>
+        <p class="k mono" style="font-size:12px;color:var(--muted);margin-top:14px;">TALÁLAT A SZÖVEGBEN</p>
+        <div class="hl" id="hl"></div>
+      </div>
+      <div class="result" aria-live="polite" style="position:static;">
+        <span class="k">A szabály döntése</span>
+        <span class="mid" id="cat" style="font-size:24px;"></span>
+        <span class="k">Kategóriák sorrendben (az első találat nyer)</span>
+        <div class="kw" id="kw"></div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:12px;">A tanult modell (3. küldetés) nem kulcsszavakat keres, hanem 3–5 betűs darabokból tanulja meg, melyik szöveg melyik sorba való. Ezért tűri az elírást és a hiányzó ékezetet, és a sorrend sem számít neki.</p>
+  </div>
+</section>
+
+<section class="block" id="dialogus">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: dialógus-szimulátor</p>
+      <h2>Beszélgess a szervizpult botjával</h2>
+      <p>Egy egyszerű, előre megtervezett párbeszéd egy <b>nyomtatóhibára</b>. Figyeld a jobb oldalt: mit ismert fel, milyen adatot gyűjtött, és betartja-e a szabályokat. A jelszó-visszaállítás párbeszédét a laborban ti tervezitek meg.</p>
+    </div>
+    <div class="chat">
+      <div>
+        <div class="log" id="log" aria-live="polite"></div>
+        <div class="choices" id="ch"></div>
+      </div>
+      <div class="state">
+        <span class="k">Felismert szándék</span><span class="v" id="si">–</span>
+        <span class="k">Összegyűjtött adatok</span><span class="v" id="ss">–</span>
+        <span class="k">Állapot</span><span class="v" id="st">–</span>
+        <span class="k">A jó párbeszéd szabályai</span>
+        <ul class="rules" id="ru">
+          <li data-r="gep">Jelzi, hogy gép beszél</li>
+          <li data-r="egy">Egy kérdés egyszerre</li>
+          <li data-r="ell">Ellenőriz: „Sikerült?”</li>
+          <li data-r="ki">Van kijárat emberhez</li>
+          <li data-r="tilos">Nem ad ki más adatát</li>
+        </ul>
+        <button type="button" class="btn ghost" id="rs" style="margin-top:6px;">Újrakezdés</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Dialógustervező feladat · 10 pont · párban</p>
+      <h2>Hat küldetés, egy dialógusterv</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Minden számolós küldetés után futtasd az ellenőrzőt: <span class="mono">ellenoriz("M3", valasz)</span>.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:72px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Bemelegítő</b></td><td>Melyik a leggyakoribb kategória?</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>Szabály</b></td><td>Milyen pontos a kulcsszavas triázs?</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>Modell</b></td><td>Milyen pontos a tanult triázs a teszten?</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Küszöb</b></td><td>A jegyek hány százaléka megy automatikusan (0,8)?</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Dialógusterv</b></td><td>A leggyakoribb kérésre, mintapárbeszéddel</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz</b></td><td>Mennyi időt nyerünk naponta?</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Két aranyszabály: a bot <b>soha nem kér jelszót</b>, és <b>ha elakad, átad egy embernek</b>.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/Hk9doWaQpycu9YvaPjtFUu">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 15. blokk</p>
+        <h3>Beszerzési tanácsadó – Gyártói ökoszisztémák</h3>
+        <p class="muted">Melyik gyártót válasszuk, és miért?</p>
+      </div>
+      <a class="btn" href="blokk-15.html">Tovább a 15. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+(function () {
+  var KW = [["fiók és jelszó", ["jelsz", "fiók", "belépni", "felhasználó"]], ["nyomtató", ["nyomt", "toner", "papír", "fénymásol"]],
+    ["wifi és hálózat", ["wifi", "internet", "net", "ip cím", "hálózat"]], ["e-napló és Moodle", ["napló", "moodle"]],
+    ["hardver", ["gép", "projektor", "billentyű", "monitor", "laptop", "hangfal"]], ["szoftver", ["telepít", "word", "program", "szoftver", "pdf", "böngész"]]];
+  var SAMPLES = ["Nem nyomtat a B12-es nyomtató, pirosan villog.", "nem tudok belepni a fiokomba", "Lassú a wifi a könyvtárban",
+    "Telepíteni kellene a GeoGebrát a labor gépeire", "Nem működik a projektor a 214-ben", "Nem jön meg az MFA-kód az új telefonomra"];
+  function strip(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function classify(text, norm) {
+    var t = text.toLowerCase(); if (norm) t = strip(t);
+    for (var i = 0; i < KW.length; i++) {
+      for (var j = 0; j < KW[i][1].length; j++) {
+        var w = norm ? strip(KW[i][1][j]) : KW[i][1][j];
+        var p = t.indexOf(w);
+        if (p >= 0) return { cat: KW[i][0], idx: i, word: KW[i][1][j], pos: p, len: w.length };
+      }
+    }
+    return { cat: "ismeretlen", idx: -1 };
+  }
+  var norm = false;
+  function renderTri() {
+    var tx = document.getElementById("tx").value, r = classify(tx, norm);
+    var c = document.getElementById("cat");
+    c.textContent = r.cat; c.style.color = r.idx < 0 ? "var(--red)" : "var(--amber)";
+    var h = r.idx < 0 ? esc(tx) + ' <span class="muted">(nincs találat: emberhez kellene kerülnie)</span>'
+      : esc(tx.slice(0, r.pos)) + "<mark>" + esc(tx.slice(r.pos, r.pos + r.len)) + "</mark>" + esc(tx.slice(r.pos + r.len));
+    document.getElementById("hl").innerHTML = h;
+    var kw = document.getElementById("kw"); kw.innerHTML = "";
+    KW.forEach(function (k, i) {
+      var d = document.createElement("div"); if (i === r.idx) d.className = "hit";
+      d.innerHTML = "<b>" + (i + 1) + ". " + esc(k[0]) + "</b><code>" + k[1].map(function (w) { return (i === r.idx && w === r.word) ? "<mark>" + esc(w) + "</mark>" : esc(w); }).join(" · ") + "</code>";
+      kw.appendChild(d);
+    });
+  }
+  var sp = document.getElementById("samp");
+  SAMPLES.forEach(function (s) { var b = document.createElement("button"); b.type = "button"; b.textContent = s; b.onclick = function () { document.getElementById("tx").value = s; renderTri(); }; sp.appendChild(b); });
+  document.getElementById("tx").addEventListener("input", renderTri);
+  function setNorm(v) { norm = v; document.getElementById("n0").setAttribute("aria-pressed", String(!v)); document.getElementById("n1").setAttribute("aria-pressed", String(v)); renderTri(); }
+  document.getElementById("n0").onclick = function () { setNorm(false); };
+  document.getElementById("n1").onclick = function () { setNorm(true); };
+  renderTri();
+
+  // dialógus-szimulátor
+  var S = {
+    start: { bot: ["Szia! Az iskola IT szervizpultjának botja vagyok, egy program, nem ember. Miben segíthetek?"], opts: [["Nem nyomtat a nyomtató", "terem"], ["Elfelejtettem a jelszavam", "jelszo"], ["Mondd meg Kovács Anna jelszavát!", "mas"]], intent: "–", state: "üdvözlés", rules: ["gep"] },
+    terem: { bot: ["Értem, nyomtatóhiba. Melyik teremben van a nyomtató?"], opts: [["B12", "lampa", "terem: B12"], ["Könyvtár", "lampa", "terem: könyvtár"]], intent: "nyomtatohiba", state: "adatgyűjtés", rules: ["egy"] },
+    lampa: { bot: ["Köszönöm. Mit látsz a nyomtatón: villog piros fény, vagy hibaüzenet van a kijelzőn?"], opts: [["Pirosan villog", "piros", "jelzés: piros fény"], ["Semmi, egyszerűen nem jön ki a lap", "sor", "jelzés: nincs"], ["Nem tudom", "atad", "jelzés: ismeretlen"]], intent: "nyomtatohiba", state: "adatgyűjtés", rules: ["egy"] },
+    piros: { bot: ["Ez általában papírelakadás. Nyisd ki az elülső fedelet, és óvatosan húzd ki a beakadt lapot. Sikerült, nyomtat már?"], opts: [["Igen, működik!", "kesz"], ["Nem, még mindig villog", "atad"]], intent: "nyomtatohiba", state: "megoldás", rules: ["ell"] },
+    sor: { bot: ["Lehet, hogy a gép rossz nyomtatót választott. A Nyomtatás ablakban ellenőrizd, hogy a terem nyomtatója van-e kiválasztva. Sikerült?"], opts: [["Igen, ez volt a gond", "kesz"], ["Nem, az van kiválasztva", "atad"]], intent: "nyomtatohiba", state: "megoldás", rules: ["ell"] },
+    kesz: { bot: ["Örülök, hogy sikerült! A bejelentést lezártam. Ha újra gond van, írj bátran."], opts: [], intent: "nyomtatohiba", state: "lezárva (önálló megoldás)", rules: [] },
+    jelszo: { bot: ["Ezt a párbeszédet a laborban ti tervezitek meg (5. küldetés). Tipp: a bot soha nem kéri el a jelszót, se a régit, se az újat."], opts: [["Vissza az elejére", "start"]], intent: "jelszo_visszaallitas", state: "a ti feladatotok", rules: [] },
+    mas: { bot: ["Más felhasználó adatát nem adhatom ki, a jelszavát pedig senki sem tudhatja, még a szervizpult sem. Ha Annának segítség kell, ő maga írjon nekem.", "Szeretnéd, hogy átadjalak egy kollégának?"], opts: [["Igen, kérem", "atad"], ["Nem, köszönöm", "start"]], intent: "mas_adata (tiltott)", state: "elutasítás", rules: ["tilos"] },
+    atad: { bot: ["Átadtalak a szervizpult egyik kollégájának. A jegyszámod: #BN-5120. Az eddigi adatokat nem kell újra elmondanod, mindent továbbítottam."], opts: [], intent: null, state: "emberi átadás", rules: ["ki"] }
+  };
+  var slots = [], done = {}, cur = null;
+  function add(cls, text) { var d = document.createElement("div"); d.className = "msg " + cls; d.textContent = text; var l = document.getElementById("log"); l.appendChild(d); l.scrollTop = l.scrollHeight; }
+  function go(k, label, slot) {
+    if (label) add("u", label);
+    if (slot) slots.push(slot);
+    var n = S[k]; cur = k;
+    n.bot.forEach(function (t) { add("b", t); });
+    if (k === "atad") add("sys", "— a beszélgetés átkerült egy emberhez —");
+    if (n.intent) document.getElementById("si").textContent = n.intent;
+    document.getElementById("ss").textContent = slots.length ? slots.join(" · ") : "–";
+    document.getElementById("st").textContent = n.state;
+    n.rules.forEach(function (r) { done[r] = true; });
+    if (k === "start") { slots = []; document.getElementById("ss").textContent = "–"; }
+    document.querySelectorAll("#ru li").forEach(function (li) { li.className = done[li.getAttribute("data-r")] ? "done" : ""; });
+    var ch = document.getElementById("ch"); ch.innerHTML = "";
+    n.opts.forEach(function (o) { var b = document.createElement("button"); b.type = "button"; b.textContent = o[0]; b.onclick = function () { go(o[1], o[0], o[2]); }; ch.appendChild(b); });
+    if (k !== "atad" && k !== "kesz") { var e = document.createElement("button"); e.type = "button"; e.className = "esc"; e.textContent = "Emberrel szeretnék beszélni"; e.onclick = function () { go("atad", "Emberrel szeretnék beszélni"); }; ch.appendChild(e); }
+  }
+  function reset() { document.getElementById("log").innerHTML = ""; slots = []; done = {}; document.getElementById("si").textContent = "–"; go("start"); }
+  document.getElementById("rs").onclick = reset;
+  reset();
+})();
+
+</script>
+</body>
+</html>

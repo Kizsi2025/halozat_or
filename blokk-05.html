@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5. blokk – L1 előléptetési vizsga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(44px, 7vw, 84px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .chip.hot { border-color: var(--amber); color: var(--amber); }
+  .handover { border-left-color: var(--amber); }
+  .handover .label { color: var(--amber); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .thresholds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .th { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .th b { font-family: var(--mono); font-size: 40px; color: var(--amber); line-height: 1; font-variant-numeric: tabular-nums; }
+  .th span { color: var(--muted); font-size: 15px; }
+  .th h3 { font-size: 22px; }
+
+  pre.code { margin: 0; background: #0A131B; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; font-family: var(--mono); font-size: 13.5px; line-height: 1.7; color: var(--snow); overflow-x: auto; }
+  pre.code .c { color: var(--amber); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+  .tool label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .tool textarea, .tool input[type=text] { width: 100%; background: var(--night); color: var(--snow); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; }
+  .tool textarea { min-height: 200px; resize: vertical; }
+  .rules { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+  .rules label { display: flex; align-items: center; gap: 8px; color: var(--snow); font-family: var(--body); font-size: 14.5px; cursor: pointer; }
+  .rules input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .out { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-family: var(--mono); font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; min-height: 60px; }
+  .out mark { background: rgba(240, 168, 48, .22); color: var(--amber); border-radius: 3px; padding: 0 2px; }
+  .map { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .ts-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .ts-out { font-family: var(--mono); font-size: 22px; color: var(--amber); }
+  .ts-why { font-size: 14.5px; color: var(--muted); }
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; }
+  .examples button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); cursor: pointer; }
+  .examples button:hover { border-color: var(--amber); }
+
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .vs .card p.q { font-size: 18px; color: var(--snow); }
+  .no { border-top: 4px solid var(--red); }
+  .yes { border-top: 4px solid var(--green); }
+
+  .check { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .check li { display: flex; gap: 14px; align-items: flex-start; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
+  .check input { width: 20px; height: 20px; accent-color: var(--green); margin-top: 2px; flex: none; }
+  .check label { cursor: pointer; }
+  .check small { display: block; color: var(--muted); font-size: 13.5px; }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .head .wrap, .vs { grid-template-columns: 1fr; }
+    .thresholds { grid-template-columns: 1fr; }
+    .ts-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 5. MŰSZAK · VIZSGANAP</span>
+  <span><a href="blokk-04.html">← 4. blokk</a> · <a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">5. blokk · 1. mérföldkő · L1 → L2</p>
+      <h1>Zajból adat: <span>Log audit</span></h1>
+      <div class="chips">
+        <span class="chip hot">L1 előléptetési vizsga</span>
+        <span class="chip">70 perc · egyéni munka</span>
+        <span class="chip">30 pont</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0216 · P2 · nyitott</span>
+      <p>„Három gyűjtő naplóját fésülték össze egy fájlba. Így nem tudunk vele dolgozni, és személyes adat is van benne. Kérünk egy tiszta, anonimizált változatot, és azt, hogy miért lett ilyen.” – L2 elemzőcsapat</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">A vizsga</p>
+      <h2>Hét lépés a tiszta naplóig</h2>
+      <p>Nincs új anyag: a 2. blokk szövegfeldolgozását, a 3. blokk Pandas- és időzóna-tudását és a 4. blokk adatvédelmi szabályait kell egyszerre alkalmazni.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:52px;">#</th><th>Feladat</th><th>Amit leadsz</th><th style="width:60px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">F1</td><td><b>Beolvasás, hibás sorok kiszűrése</b></td><td>érvényes sorok, a hibásak száma</td><td class="num">4</td></tr>
+          <tr><td class="num">F2</td><td><b>Ismétlődő sorok eltávolítása</b></td><td>egyedi sorok, a sorrend megtartva</td><td class="num">3</td></tr>
+          <tr><td class="num">F3</td><td><b>Időbélyegek egységesítése helyi időre</b></td><td>DataFrame öt oszloppal</td><td class="num">6</td></tr>
+          <tr><td class="num">F4</td><td><b>Szintek egységesítése</b></td><td>csak INFO, WARNING, ERROR, CRITICAL</td><td class="num">3</td></tr>
+          <tr><td class="num">F5</td><td><b>Anonimizálás következetes álnevekkel</b></td><td>álnevesített üzenetek</td><td class="num">8</td></tr>
+          <tr><td class="num">F6</td><td><b>Mentés és audit-összesítő</b></td><td>tiszta_naplo.csv és a számok</td><td class="num">3</td></tr>
+          <tr><td class="num">F7</td><td><b>Hibáztatásmentes postmortem</b></td><td>öt rész, szövegesen</td><td class="num">3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="thresholds" style="margin-top:16px;">
+      <div class="th"><b>18+</b><h3>Szintlépés</h3><span>L1 ügyeletesből L2 elemző</span></div>
+      <div class="th"><b>24+</b><h3>Logvallató jelvény</h3><span>A tisztított, anonimizált naplókészletért</span></div>
+      <div class="th"><b>18 alatt</b><h3>Pótlás</h3><span>Egyeztetett időpontban, új adatokkal</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Mi vár a fájlban?</p>
+      <h2>Öt hibatípus</h2>
+      <p>Ezek a típusok szerepelnek a vizsgafájlban. Hogy melyikből mennyi, azt neked kell kiderítened.</p>
+    </div>
+<pre class="code">2026-11-13 01:41:26 web-01 WARNING SSHD: …            <span class="c">← helyi ISO, ez már jó</span>
+2026-11-13T00:35:23Z sw-b-01 INFO SNMP: …             <span class="c">← UTC: helyi idő = +1 óra</span>
+2026-11-13T00:35:23Z sw-b-01 INFO SNMP: …             <span class="c">← pontos ismétlés</span>
+Nov 13 02:30:01 backup-01 Info BACKUP: …              <span class="c">← nincs év, más szintírás</span>
+-- MARK --                                            <span class="c">← nem naplósor</span>
+… user=… · …@bolyai.hu · pc-… · MAC · 10.20.x.y       <span class="c">← személyes adat</span></pre>
+  </div>
+</section>
+
+<section class="block" id="ido">
+  <div class="wrap">
+    <div class="grid g2" style="align-items:start;">
+      <div class="sec-head" style="margin-bottom:0;">
+        <p class="eyebrow">Gyakorló · F3</p>
+        <h2>Időbélyeg-átváltó</h2>
+        <p>Írj be egy időbélyeget a három forma valamelyikében, és nézd meg, mi lesz belőle helyi időben. Figyeld meg, mi történik éjfél körül egy UTC-s időponttal.</p>
+      </div>
+      <div class="tool">
+        <label for="ts-in">Időbélyeg</label>
+        <input type="text" id="ts-in" value="2026-11-12T23:40:05Z" autocomplete="off" spellcheck="false">
+        <div class="examples" aria-label="Példák">
+          <button type="button" data-v="2026-11-12T23:40:05Z">UTC éjfél előtt</button>
+          <button type="button" data-v="2026-11-13T07:01:57Z">UTC reggel</button>
+          <button type="button" data-v="Nov 13 02:30:01">év nélküli</button>
+          <button type="button" data-v="2026-11-13 08:10:02">helyi ISO</button>
+        </div>
+        <div class="ts-row"><span class="ts-out" id="ts-out" aria-live="polite">2026-11-13 00:40:05</span></div>
+        <p class="ts-why" id="ts-why">UTC (Z végződés): +1 óra, és átléptünk a következő napra.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="anonim">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Gyakorló · F5</p>
+      <h2>Anonimizáló játszótér</h2>
+      <p>Kapcsold be a szabályokat egyenként, és figyeld meg, hogy ugyanaz a személy mindig ugyanazt az álnevet kapja. A mintasorok kitalált adatok, nem a vizsgafájlból valók. Szerkesztheted is őket.</p>
+    </div>
+    <div class="tool">
+      <label for="an-in">Bemenet</label>
+      <textarea id="an-in" spellcheck="false">Accepted password for user=fekete.adam from 10.20.3.71
+DHCPACK 10.20.3.71 to 3c:22:fb:10:aa:07 (pc-fekete-adam)
+Access denied: fekete.adam@bolyai.hu -> \\file-01\tanari
+Accepted password for user=balogh.rita from 10.20.2.140
+Failed password for user=root from 185.23.41.7
+DHCPACK 10.20.2.140 to 7e:01:9c:42:55:d0 (pc-balogh-rita)
+GET /index.html 200 from 10.20.1.10</textarea>
+      <div class="rules" role="group" aria-label="Anonimizálási szabályok">
+        <label><input type="checkbox" id="r-user" checked> felhasználónév</label>
+        <label><input type="checkbox" id="r-mail" checked> e-mail</label>
+        <label><input type="checkbox" id="r-pc" checked> gépnév</label>
+        <label><input type="checkbox" id="r-mac" checked> MAC-cím</label>
+        <label><input type="checkbox" id="r-ip" checked> kliens IP (10.20.2–5.x)</label>
+      </div>
+      <label>Kimenet (a cserélt részek kiemelve)</label>
+      <div class="out" id="an-out" aria-live="polite"></div>
+      <p class="map" id="an-map"></p>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="postmortem">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">F7 · Hibáztatásmentes postmortem</p>
+      <h2>Nem azt keressük, ki rontotta el</h2>
+      <p>Öt rész: összefoglaló, hatás, gyökérokok, teendők felelős szerepkörrel, tanulság. A gyökérok a „miért történhetett meg”, nem a tünet.</p>
+    </div>
+    <div class="vs">
+      <div class="card no"><span class="tag" style="color:var(--red);">Ne így</span><p class="q">„A B gyűjtőt beállító kolléga elrontotta az időzónát.”</p><p>Személyt hibáztat, és nem mondja meg, hogyan lehet megelőzni.</p></div>
+      <div class="card yes"><span class="tag" style="color:var(--green);">Hanem így</span><p class="q">„Nincs előírva, milyen időzónában írjanak a gyűjtők, és ezt semmi sem ellenőrzi.”</p><p>A folyamat hiányát nevezi meg, ebből egyenesen következik a teendő.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="felkeszules">
+  <div class="wrap">
+    <div class="grid g2" style="align-items:start;">
+      <div class="sec-head" style="margin-bottom:0;">
+        <p class="eyebrow">Felkészülés</p>
+        <h2>Készen állsz?</h2>
+        <p>A pipák csak nálad, ebben a böngészőben látszanak. Ahol bizonytalan vagy, nézd át a megadott blokk munkafüzetét.</p>
+        <p class="muted" style="font-size:15px;"><b style="color:var(--snow);">Használható a vizsgán:</b> saját munkafüzetek, puskák, Python- és Pandas-dokumentáció. <b style="color:var(--snow);">Nem használható:</b> MI-asszisztens, mások munkája.</p>
+      </div>
+      <ul class="check" id="check">
+        <li><input type="checkbox" id="c1"><label for="c1">Be tudok olvasni egy szövegfájlt soronként<small>2. blokk, M1</small></label></li>
+        <li><input type="checkbox" id="c2"><label for="c2">Tudom, hogyan hagyjak ki hibás sorokat ciklusban<small>2. blokk, káoszkártya</small></label></li>
+        <li><input type="checkbox" id="c3"><label for="c3">Tudok időt eltolni pd.Timedelta-val, és tudom, miért kell<small>3. blokk, káoszkártya</small></label></li>
+        <li><input type="checkbox" id="c4"><label for="c4">Felismerem a syslog különböző formáit<small>4. blokk, PRI és időbélyeg</small></label></li>
+        <li><input type="checkbox" id="c5"><label for="c5">Tudom, mi számít személyes adatnak egy naplóban<small>1. blokk kódex, 4. blokk NetFlow</small></label></li>
+        <li><input type="checkbox" id="c6"><label for="c6">El tudom mondani, mi a különbség a gyökérok és a tünet között<small>5. blokk, postmortem</small></label></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Vizsga-eligazítás</p>
+        <h3>A vizsganap diái</h3>
+        <p class="muted">A 10 diás eligazítás, amelyet a vizsga elején láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/RrBDXtpDa8ESEtSX9d7aG2">Diák megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow" style="color:var(--cyan);">Következő műszak · 6. blokk · „B” modul · L2 elemző</p>
+        <h3>Mennyi lesz holnap? Kapacitás-előrejelzés</h3>
+        <p class="muted">Lineáris regresszió a terhelés előrejelzésére. A 3. blokk trendvonalának teljes változata.</p>
+      </div>
+      <a class="btn" href="blokk-06.html">Tovább a 6. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="blokk-04.html" style="color:inherit;">← 4. blokk</a> · <a href="index.html" style="color:inherit;">Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// Időbélyeg-átváltó
+const HONAP = {Jan:1, Feb:2, Mar:3, Apr:4, May:5, Jun:6, Jul:7, Aug:8, Sep:9, Oct:10, Nov:11, Dec:12};
+const p2 = n => String(n).padStart(2, '0');
+function fmt(d) { return d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()) + ' ' + p2(d.getUTCHours()) + ':' + p2(d.getUTCMinutes()) + ':' + p2(d.getUTCSeconds()); }
+function conv() {
+  const v = document.getElementById('ts-in').value.trim();
+  const out = document.getElementById('ts-out'), why = document.getElementById('ts-why');
+  let m;
+  if ((m = v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z$/))) {
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] + 1, +m[5], +m[6]));
+    out.textContent = fmt(d);
+    why.textContent = 'UTC (Z végződés): +1 óra.' + (d.getUTCDate() !== +m[3] ? ' Átléptünk a következő napra!' : '');
+  } else if ((m = v.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/))) {
+    out.textContent = v; why.textContent = 'Helyi ISO: már jó, nem kell változtatni.';
+  } else if ((m = v.match(/^([A-Z][a-z]{2})\s+(\d{1,2}) (\d{2}):(\d{2}):(\d{2})$/)) && HONAP[m[1]]) {
+    out.textContent = '2026-' + p2(HONAP[m[1]]) + '-' + p2(+m[2]) + ' ' + m[3] + ':' + m[4] + ':' + m[5];
+    why.textContent = 'Régi syslog-forma: helyi idő, de az évet nekünk kell hozzátenni (2026).';
+  } else {
+    out.textContent = '–'; why.textContent = 'Ezt a formát nem ismerem fel. Ha a naplóban ilyen sor van, az hibás sor (F1).';
+  }
+}
+document.getElementById('ts-in').addEventListener('input', conv);
+document.querySelectorAll('.examples button').forEach(b => b.addEventListener('click', () => { document.getElementById('ts-in').value = b.dataset.v; conv(); }));
+conv();
+
+// Anonimizáló
+function anon() {
+  const src = document.getElementById('an-in').value;
+  const on = id => document.getElementById(id).checked;
+  const alnev = new Map(); let ns = 0, nm = 0;
+  const person = k => { if (!alnev.has('p:' + k)) alnev.set('p:' + k, String(++ns).padStart(2, '0')); return alnev.get('p:' + k); };
+  const mac = k => { if (!alnev.has('m:' + k)) alnev.set('m:' + k, String(++nm).padStart(2, '0')); return alnev.get('m:' + k); };
+  const M = s => '\u0001' + s + '\u0002';
+  let t = src;
+  if (on('r-user')) t = t.replace(/user=([a-z]+\.[a-z]+)/g, (_, n) => 'user=' + M('felhasznalo_' + person(n)));
+  if (on('r-mail')) t = t.replace(/([a-z]+\.[a-z]+)@bolyai\.hu/g, (_, n) => M('felhasznalo_' + person(n)) + '@bolyai.hu');
+  if (on('r-pc')) t = t.replace(/pc-([a-z]+)-([a-z]+)/g, (_, a, b) => M('pc_' + person(a + '.' + b)));
+  if (on('r-mac')) t = t.replace(/\b([0-9a-f]{2}:){5}[0-9a-f]{2}\b/g, m => M('mac_' + mac(m)));
+  if (on('r-ip')) t = t.replace(/\b10\.20\.([2-5])\.\d{1,3}\b/g, (_, s) => M('10.20.' + s + '.x'));
+  document.getElementById('an-out').innerHTML = esc(t).replace(/\u0001/g, '<mark>').replace(/\u0002/g, '</mark>');
+  const people = [...alnev.keys()].filter(k => k.startsWith('p:')).map(k => k.slice(2) + ' → ' + alnev.get(k));
+  document.getElementById('an-map').textContent = people.length ? 'Álnévtábla (ezt soha nem adjuk ki): ' + people.join(' · ') : 'Nincs álnevesített személy.';
+}
+['an-in', 'r-user', 'r-mail', 'r-pc', 'r-mac', 'r-ip'].forEach(id => document.getElementById(id).addEventListener('input', anon));
+anon();
+
+// Felkészülési lista
+const cb = document.querySelectorAll('#check input');
+try { const st = JSON.parse(localStorage.getItem('hor-b5-check') || '[]'); cb.forEach((c, i) => { c.checked = !!st[i]; }); } catch (e) {}
+cb.forEach(c => c.addEventListener('change', () => { try { localStorage.setItem('hor-b5-check', JSON.stringify([...cb].map(x => x.checked))); } catch (e) {} }));
+</script>
+</body>
+</html>

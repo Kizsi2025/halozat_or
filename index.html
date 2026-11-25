@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hálózat-őr képzés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero { padding: 64px 0 56px; border-bottom: 1px solid var(--line); }
+  .hero .wrap { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 48px; align-items: start; }
+  .hero h1 { font-size: clamp(64px, 11vw, 132px); font-weight: 700; letter-spacing: -.02em; line-height: .92; margin: 14px 0 20px; }
+  .hero h1 span { color: var(--amber); }
+  .hero .lead { font-size: 20px; color: var(--snow); max-width: 34ch; }
+  .hero .sub { margin-top: 14px; color: var(--muted); max-width: 52ch; }
+  .hero .actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+
+  .feed { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .feed-head { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .feed-list { list-style: none; margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; height: 392px; overflow: hidden; }
+  .feed-list li.new { animation: drop .5s ease-out both; }
+  .feed-list .ticket { font-size: 13px; }
+  .feed-list .ticket p { color: var(--muted); }
+  @keyframes drop { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+
+  .facts { display: grid; grid-template-columns: repeat(6, 1fr); border-bottom: 1px solid var(--line); }
+  .fact { padding: 22px 20px; border-right: 1px solid var(--line); }
+  .fact:last-child { border-right: none; }
+  .fact b { display: block; font-family: var(--mono); font-size: 30px; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .fact span { font-size: 14px; color: var(--muted); }
+
+  .track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; position: relative; }
+  .track::before { content: ""; position: absolute; left: 10%; right: 10%; top: 15px; height: 2px; background: var(--line); }
+  .station { display: flex; flex-direction: column; gap: 6px; padding: 0 12px; position: relative; text-align: center; align-items: center; }
+  .station .node { width: 32px; height: 32px; border-radius: 50%; background: var(--panel); border: 2px solid var(--line); font-family: var(--mono); font-size: 13px; font-weight: 700; display: grid; place-items: center; color: var(--muted); position: relative; }
+  .station.now .node { background: var(--amber); border-color: var(--amber); color: var(--night); }
+  .station h3 { font-size: 22px; margin-top: 8px; }
+  .station .blocks { font-family: var(--mono); font-size: 12.5px; color: var(--cyan); }
+  .station p { font-size: 14.5px; color: var(--muted); }
+  .here { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--amber); letter-spacing: .08em; }
+
+  .mod-row td { background: var(--panel-2); font-family: var(--mono); font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--amber); font-weight: 600; }
+  .blk-title { font-weight: 600; }
+  .blk-title a { color: var(--snow); }
+  .soon { font-family: var(--mono); font-size: 12px; color: #6F8494; white-space: nowrap; }
+  .open { font-family: var(--mono); font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+  .milestone { color: var(--amber); }
+
+  .rules-points { display: flex; flex-direction: column; gap: 0; }
+  .pt { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 15.5px; }
+  .pt:last-child { border-bottom: none; }
+  .pt b { font-family: var(--mono); color: var(--amber); }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+  .badge { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--snow); background: var(--panel-2); }
+  .badge i { color: var(--muted); font-style: normal; }
+  .weights { display: flex; height: 40px; border-radius: 6px; overflow: hidden; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--night); }
+  .weights div { display: flex; align-items: center; padding: 0 12px; white-space: nowrap; }
+
+  @media (max-width: 860px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .facts { grid-template-columns: repeat(3, 1fr); }
+    .fact:nth-child(3n) { border-right: none; }
+    .fact:nth-child(-n+3) { border-bottom: 1px solid var(--line); }
+    .track { grid-template-columns: 1fr; gap: 22px; }
+    .track::before { left: 15px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; }
+    .station { flex-direction: row; text-align: left; align-items: flex-start; gap: 14px; flex-wrap: wrap; padding: 0; }
+    .station > div { flex: 1; min-width: 200px; }
+    .station h3 { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · ÜGYELET AKTÍV</span>
+  <span>2026/2027 · <a href="blokk-21.html">Legújabb műszak: 21. blokk →</a></span>
+</div></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Mikrotanúsítvány · Informatikai rendszer- és alkalmazás-üzemeltető technikus (5 0612 12 02)</p>
+      <h1>Hálózat-<span>őr</span></h1>
+      <p class="lead">Egy tanéven át ti vagytok a Bolyai Net hálózatüzemeltető központjának ügyeletesei.</p>
+      <p class="sub">Mesterséges intelligencia és AIOps az intelligens hálózat- és rendszerüzemeltetésben. Hibajegyeket kaptok, adatokból keresitek a hiba okát, gépi tanulással előre jeleztek, és API-n keresztül avatkoztok be. L1 ügyeletesként kezdtek, és AIOps-mérnökként végeztek.</p>
+      <div class="actions">
+        <a class="btn" href="blokk-01.html">Első műszak megnyitása →</a>
+        <a class="btn ghost" href="#mukszakok">Mind a 31 blokk</a>
+      </div>
+    </div>
+    <aside class="feed" aria-label="Beérkező hibajegyek (példák)">
+      <div class="feed-head"><span>Beérkező jegyek</span><span id="clock">08:12</span></div>
+      <ul class="feed-list" id="feed"></ul>
+    </aside>
+  </div>
+</header>
+
+<div class="wrap" style="padding:0;">
+  <div class="facts">
+    <div class="fact"><b>62</b><span>óra összesen</span></div>
+    <div class="fact"><b>31</b><span>műszak (blokk)</span></div>
+    <div class="fact"><b>71%</b><span>labor és szimuláció</span></div>
+    <div class="fact"><b>4</b><span>előléptetési vizsga</span></div>
+    <div class="fact"><b>9</b><span>szakági jelvény</span></div>
+    <div class="fact"><b>60%</b><span>kell a tanúsítványhoz</span></div>
+  </div>
+</div>
+
+<section class="block" id="terkep">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Szintlépési térkép</p>
+      <h2>Öt állomás egy év alatt</h2>
+      <p>Minden szint végén gyakorlati előléptetési vizsga van. A sikeres vizsga nyitja meg a következő szintet, és mindegyiket rövid, hibáztatásmentes hibaelemzés (postmortem) zárja.</p>
+    </div>
+    <div class="track">
+      <div class="station now"><span class="node">L1</span><div><span class="here">ITT KEZDESZ</span><h3>L1 ügyeletes</h3><p class="blocks">1–5. blokk · „A” modul</p><p>Adatok és naplók. Vizsga: Log audit (5.)</p></div></div>
+      <div class="station"><span class="node">L2</span><div><h3>L2 elemző</h3><p class="blocks">6–10. blokk · „B” modul</p><p>Gépi tanulás. Vizsga: kiberbiztonság, red team / blue team (10.)</p></div></div>
+      <div class="station"><span class="node">L3</span><div><h3>L3 rendszermérnök</h3><p class="blocks">11–15. blokk · „C” modul</p><p>Alkalmazási területek. Vizsga: felhő és költség (12.)</p></div></div>
+      <div class="station"><span class="node">AI</span><div><h3>AIOps-mérnök</h3><p class="blocks">16–20. blokk · „D” modul</p><p>Automatizálás. Vizsga: éles ügyelet (19.)</p></div></div>
+      <div class="station"><span class="node">2.0</span><div><h3>Bolyai NOC 2.0</h3><p class="blocks">21–31. blokk · projekt</p><p>Csapatban megépített AIOps-platform és védés.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="mukszakok">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Műszakok</p>
+      <h2>Mind a 31 blokk</h2>
+      <p>Minden blokk heti 2 × 45 perc. Az E/GY oszlop az elmélet és a gyakorlat óraszámát mutatja. A blokkok oldalai fokozatosan nyílnak meg.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:64px;">Blokk</th><th>Téma</th><th style="width:72px;">E / GY</th><th>Számonkérés</th><th style="width:110px;"></th></tr></thead>
+        <tbody id="blocks"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="szabalyok">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Játékszabályok</p>
+      <h2>Így gyűlnek a pontok</h2>
+      <p>A csapateredmények a NOC-falon, a tantermi kivetítőn látszanak. Egyéni rangsor nincs: a saját eredményedet csak te látod, és az érdemjegyed mindig egyéni teljesítményen alapul.</p>
+    </div>
+    <div class="grid g3">
+      <div class="card">
+        <span class="tag">SLA-pontok jegyenként</span>
+        <div class="rules-points">
+          <div class="pt"><span>Határidőn belül lezárva</span><b>4</b></div>
+          <div class="pt"><span>Szakszerű megoldás</span><b>4</b></div>
+          <div class="pt"><span>Dokumentált lezárás</span><b>2</b></div>
+          <div class="pt"><span>Saját hiba feltárása</span><b>+2</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <span class="tag">Hibakeret</span>
+        <h3>95%-os havi cél</h3>
+        <p>Minden csapat jegyeinek 95%-a záruljon határidőn belül. Ha a keret elfogy, változtatási tilalom (change freeze) jön: a következő küldetés előtt megbízhatósági feladatot oldotok meg, például runbookot írtok vagy automatizáltok.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Szerepek és káosz</span>
+        <h3>Senki sem csak kódol</h3>
+        <p>A csapatmunkás blokkokban körbejár az incidensvezető, az elemző, a kommunikációs felelős és a dokumentáló szerepe. Hetente egy-két káoszkártya hoz váratlan eseményt; a 27. blokk teljes Game Day.</p>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top:16px;">
+      <div class="card">
+        <span class="tag">9 szakági jelvény</span>
+        <div class="badges">
+          <span class="badge">Logvallató <i>3–5.</i></span>
+          <span class="badge">Jóspap <i>6.</i></span>
+          <span class="badge">Anomáliavadász <i>7.</i></span>
+          <span class="badge">Csendőr <i>8.</i></span>
+          <span class="badge">Kapuőr <i>10.</i></span>
+          <span class="badge">Mentőangyal <i>11.</i></span>
+          <span class="badge">Felhő-könyvelő <i>12.</i></span>
+          <span class="badge">Távirányító <i>16.</i></span>
+          <span class="badge">Öngyógyító <i>17.</i></span>
+        </div>
+        <p>Mindegyik egy kompetenciát igazol a képzés kimeneti követelményei közül.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Az érdemjegy összetétele</span>
+        <div class="weights" role="img" aria-label="Hibajegyek 40%, vizsgák 20%, záróprojekt 40%">
+          <div style="flex:40; background:var(--cyan);">Hibajegyek 40%</div>
+          <div style="flex:20; background:var(--amber);">Vizsgák 20%</div>
+          <div style="flex:40; background:#A9B6C0;">Záróprojekt 40%</div>
+        </div>
+        <p>A mikrotanúsítványhoz legalább 60%-os összesített eredmény és sikeres technikusi szakmai vizsga kell.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span>BMSZC Bolyai János Műszaki Technikum és Kollégium · OM 203058/003</span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const BLOCKS = [
+  ["A", "„A” modul · Alapok és adatok · L1 ügyeletes szint"],
+  [1, "Első műszak – Belépés a NOC-ba", "1/1", "Villámkvíz és kihíváskártyák", "blokk-01.html"],
+  [2, "Az ügyeletes zsebkése – Python-szkriptek", "1/1", "Python-szkriptelési labor", "blokk-02.html"],
+  [3, "Logvallatás – Pandas és Matplotlib", "0/2", "Telemetria-rajzolási feladat", "blokk-03.html"],
+  [4, "Honnan jön a jel? – Telemetria-források", "1/1", "Adatgyűjtési architektúra terv", "blokk-04.html"],
+  [5, "Zajból adat – Log audit", "0/2", "1. mérföldkő: L1 előléptetési vizsga", "blokk-05.html", true],
+  ["B", "„B” modul · Gépi tanulás az üzemeltetésben · L2 elemző szint"],
+  [6, "Mennyi lesz holnap? – Kapacitás-előrejelzés", "1/1", "Kapacitástervezési küldetés", "blokk-06.html"],
+  [7, "Ami kilóg a sorból – Anomáliadetektálás", "1/1", "Anomália jelentés, prezentáció", "blokk-07.html"],
+  [8, "Csendesebb éjszakák – Prediktív riasztás", "1/1", "Prediktív riasztási labor", "blokk-08.html"],
+  [9, "Neurális szerverdiagnózis", "1/1", "Mélytanuló szerverteszt", "blokk-09.html"],
+  [10, "P1: Támadás! – IDS/IPS", "1/1", "2. mérföldkő: L2 előléptetési vizsga", "blokk-10.html", true],
+  ["C", "„C” modul · Alkalmazási területek · L3 rendszermérnök szint"],
+  [11, "Az eltűnt mentés rejtélye", "1/1", "Archiválási anomáliateszt", "blokk-11.html"],
+  [12, "Elszálló felhőszámla", "1/1", "3. mérföldkő: L3 előléptetési vizsga", "blokk-12.html", true],
+  [13, "A hálózat peremén – Edge", "1/1", "Edge prototípus terv", "blokk-13.html"],
+  [14, "Az első vonal – Chatbot és jegytriázs", "1/1", "Dialógustervező feladat", "blokk-14.html"],
+  [15, "Beszerzési tanácsadó – Gyártói ökoszisztémák", "1/1", "Termékértékelési feladat", "blokk-15.html"],
+  ["D", "„D” modul · Automatizálás és AIOps · AIOps-mérnök szint"],
+  [16, "Távirányítás – REST API", "0/2", "API konfigurációs teszt", "blokk-16.html"],
+  [17, "Önjavító hálózat – SDN", "1/1", "Öngyógyító szimuláció", "blokk-17.html"],
+  [18, "Az AIOps tervrajza", "1/1", "AIOps csővezeték terv", "blokk-18.html"],
+  [19, "Éles ügyelet – Gyakorlónap", "0/2", "4. mérföldkő: AIOps-mérnök vizsga", "blokk-19.html", true],
+  [20, "Ki felel, ha a gép dönt? – Etika és kockázat", "1/1", "Etikai és kockázatelemzési műhelymunka", "blokk-20.html"],
+  ["P", "Bolyai NOC 2.0 · Záróprojekt csapatban"],
+  [21, "Projektindítás", "1/1", "Projekt- és szerepkör-rögzítés", "blokk-21.html"],
+  [22, "Adatforrások és szkriptelés", "0/2", "Adatgyűjtő modul leadása"],
+  [23, "Adattisztítás és előfeldolgozás", "0/2", "Tisztított adathalmaz audit"],
+  [24, "Modellépítés és anomáliadetektálás", "0/2", "ML modell validációs teszt"],
+  [25, "Riasztási és eszkalációs rendszer", "0/2", "Riasztó modul működési teszt"],
+  [26, "Hálózati API és automatizációs modul", "0/2", "API végpont integrációs labor"],
+  [27, "Integrált rendszerpróba – Game Day", "0/2", "Rendszerintegrációs teszt"],
+  [28, "Dokumentáció és dashboard", "0/2", "Projekt portfólió ellenőrzés"],
+  [29, "Átadás-átvétel előkészítése", "1/1", "Prezentációs főpróba"],
+  [30, "Záró projektmunka bemutatása és védése I.", "0/2", "Szóbeli és gyakorlati védés"],
+  [31, "Záró projektmunka bemutatása és védése II.", "0/2", "Év végi minősítés és zárás", null, true]
+];
+const tbody = document.getElementById('blocks');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+tbody.innerHTML = BLOCKS.map(b => {
+  if (typeof b[0] === 'string') return `<tr class="mod-row"><td colspan="5">${esc(b[1])}</td></tr>`;
+  const [n, title, eg, check, href, ms] = b;
+  const t = href ? `<a href="${href}">${esc(title)}</a>` : esc(title);
+  const act = href ? `<a class="open" href="${href}">Megnyitás →</a>` : `<span class="soon">hamarosan</span>`;
+  return `<tr><td class="num">${String(n).padStart(2,'0')}</td><td class="blk-title">${t}</td><td class="num">${eg}</td><td class="${ms ? 'milestone' : 'muted'}">${esc(check)}</td><td>${act}</td></tr>`;
+}).join('');
+
+const TICKETS = [
+  ["#BN-0203", "p1", "P1", "Az iskola internetkapcsolata megszakadt"],
+  ["#BN-0205", "p2", "P2", "B épület: 10 perce nincs wifi"],
+  ["#BN-0206", "p2", "P2", "Mentés „sikeres”, de a fájl 0 KB"],
+  ["#BN-0207", "p2", "P2", "1200 sikertelen SSH-belépési kísérlet"],
+  ["#BN-0202", "p3", "P3", "Tűzfal-CPU három napja nő: 55 → 84%"],
+  ["#BN-0201", "p3", "P3", "Tanári szoba: a nyomtató offline"],
+  ["#BN-0204", "p4", "P4", "Elfelejtett jelszó, új jelszót kérnek"]
+];
+const feed = document.getElementById('feed');
+const clock = document.getElementById('clock');
+let i = 0, minute = 12;
+function ticketEl(t, time) {
+  const li = document.createElement('li');
+  li.innerHTML = `<div class="ticket"><div class="t-head"><span class="prio ${t[1]}">${t[2]}</span><span>${t[0]}</span><span class="muted" style="margin-left:auto;font-weight:400;">${time}</span></div><p>${esc(t[3])}</p></div>`;
+  return li;
+}
+function hhmm(m) { return '08:' + String(m % 60).padStart(2, '0'); }
+for (let k = 0; k < 4; k++) { feed.appendChild(ticketEl(TICKETS[k], hhmm(minute - k * 3))); }
+i = 4;
+const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!still) {
+  setInterval(() => {
+    minute += 3;
+    clock.textContent = hhmm(minute);
+    const el = ticketEl(TICKETS[i % TICKETS.length], hhmm(minute)); el.className = 'new'; feed.prepend(el);
+    i++;
+    while (feed.children.length > 5) feed.lastElementChild.remove();
+  }, 3200);
+}
+</script>
+</body>
+</html>

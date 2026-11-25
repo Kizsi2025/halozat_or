@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13. blokk – A hálózat peremén: Edge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+
+  .arch { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .arch .lay { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .arch .lay.edge { border-color: var(--amber); border-width: 2px; }
+  .arch .arr { align-self: center; font-family: var(--mono); color: var(--muted); font-size: 22px; }
+  .arch h3 { font-size: 20px; }
+  .ok { color: #5CC98A; } .no { color: var(--red); }
+
+  @media (max-width: 860px) {
+    .arch { grid-template-columns: 1fr; } .arch .arr { transform: rotate(90deg); justify-self: center; }
+    .r321 { grid-template-columns: 1fr; }
+    .strip { gap: 1px; }
+    .head .wrap, .tune, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .row { grid-template-columns: 110px minmax(0, 1fr) 100px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 13. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">13. blokk · „C” modul · AIOps-mérnök jelölt</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">A hálózat peremén <span>Edge vs. Cloud</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Edge prototípus terv</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0410 · P3 · nyitott</span>
+      <p>„A pályázatból 12 új kamera jön. A szállító azt javasolja, minden képet küldjünk fel a felhőbe elemzésre. Jó ötlet ez? Tervezzétek meg, hogyan csinálnátok!” – igazgatóhelyettes</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Elmagyarázod, mikor jobb helyben (a peremen) és mikor a felhőben feldolgozni az adatot.</li>
+      <li>Kiszámolod az adatmennyiséget, és percentilissel értékeled a válaszidőt.</li>
+      <li>Hardvert választasz teljesítmény és 3 éves összköltség alapján, tartalékkal.</li>
+      <li>Prototípus-tervet készítesz, amelyben a hibatűrés és az adatvédelem is benne van.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Felhő vagy perem, adat, válaszidő, hardver, adatvédelem</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Számítások és prototípus-terv, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Két terv bemutatása</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="retegek">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Peremhálózati architektúra</p>
+      <h2>Három réteg, három feladat</h2>
+      <p>A perem nem helyettesíti a felhőt: elvégzi azt, ami helyben gyorsabb, olcsóbb vagy biztonságosabb.</p>
+    </div>
+    <div class="arch">
+      <div class="lay"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">1 · ESZKÖZÖK</span><h3>Kamerák, érzékelők</h3><p class="muted">nyers kép és mérés, folyamatosan</p></div>
+      <div class="arr">→</div>
+      <div class="lay edge"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">2 · PEREM (EDGE)</span><h3>Elemzés helyben</h3><p class="muted">gyors döntés, riasztás, szűrés, helyi tár kiesés esetére</p></div>
+      <div class="arr">→</div>
+      <div class="lay"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">3 · FELHŐ</span><h3>Központ</h3><p class="muted">csak az események, hosszú távú tárolás, modelltanítás, felület</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="tervezo">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: perem-tervező</p>
+      <h2>Felhő vagy perem? Számold ki!</h2>
+      <p>Gyakorló számoló a labor gyakorló katalógusával (becsült adatok, nem konkrét termékek). Kameránként 5 képkocka/s-ot elemzünk. Állítsd a paramétereket, és nézd meg, mi felel meg a követelményeknek, és mi a legolcsóbb 3 év alatt.</p>
+    </div>
+    <div class="lab">
+      <div class="tool">
+        <div class="row"><label for="tk">kamerák száma</label><input type="range" id="tk" min="2" max="40" step="1" value="8"><output id="tko"></output></div>
+        <div class="row"><label for="tb">bitráta / kamera</label><input type="range" id="tb" min="2" max="16" step="1" value="6"><output id="tbo"></output></div>
+        <div class="row"><label for="tm">mozgásos idő</label><input type="range" id="tm" min="5" max="100" step="5" value="15"><output id="tmo"></output></div>
+        <div class="row"><label for="tl">válaszidő-követelmény</label><input type="range" id="tl" min="20" max="500" step="10" value="100"><output id="tlo"></output></div>
+        <div class="toggle" role="group" aria-label="Tartalék">
+          <button type="button" id="r0" aria-pressed="true">Tartalék nélkül</button>
+          <button type="button" id="r1" aria-pressed="false">N+1 tartalék</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Eszköz</th><th>db</th><th>3 év</th></tr></thead><tbody id="tt"></tbody></table></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">Napi adat a felhőbe</span>
+        <span class="mid" id="tgb" style="line-height:1.6;"></span>
+        <span class="k">Válaszidő (p95)</span>
+        <span class="mid" id="tlat" style="line-height:1.6;"></span>
+        <span class="k">3 év összesen</span>
+        <span class="mid" id="tco" style="line-height:1.6;"></span>
+        <p class="verdict" id="tv"></p>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:12px;">Feltevések: felhős p95 kb. 207 ms, peremen kb. 12 ms (a labor mérései) · felhős elemzés és tárolás 0,012 €/GB · áram 0,25 €/kWh · a feltöltési sáv 1000 Mbit/s.</p>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Edge prototípus terv · 10 pont · párban</p>
+      <h2>Öt kérdés, egy terv</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Minden küldetés után futtasd az ellenőrzőt: <span class="mono">ellenoriz("M3", valasz)</span>.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:72px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1–M2</td><td><b>Bemelegítő</b></td><td>Mennyi adat? Milyen gyors (p95)?</td><td class="num">–</td></tr>
+          <tr><td class="num">M3</td><td><b>Hardver</b></td><td>Melyik eszköz a legolcsóbb 3 év alatt?</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Szűrés</b></td><td>Mennyivel kevesebb adat megy fel?</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Kiesés</b></td><td>Mekkora helyi tár kell?</td><td class="num">2</td></tr>
+          <tr><td class="num">Terv</td><td><b>Prototípus-terv</b></td><td>Architektúra, adatfolyam, hardver, hibatűrés, adatvédelem, költség</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz</b></td><td>3 év összevetés</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Ne feledd: a kamera képe személyes adat. A terv része, hol vannak a felvételek, ki fér hozzájuk, és meddig őrizzük őket.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/4XJpxNrmahPxU17LjyevFm">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 14. blokk</p>
+        <h3>Az első vonal – Chatbot és jegytriázs</h3>
+        <p class="muted">Ha naponta 200 bejelentés jön, ki válaszol az elsőre?</p>
+      </div>
+      <a class="btn" href="blokk-14.html">Tovább a 14. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+const ESZK = [['A · kis ARM egykártyás gép', 4, 8, 120], ['B · edge AI modul (GPU-s)', 40, 15, 550], ['C · mini PC gyorsítóval', 70, 35, 900], ['D · ipari edge szerver', 300, 250, 4200]];
+const W3 = 24 * 365 * 3 / 1000 * 0.25, GB = 0.012, NAP3 = 1095;
+let n1 = false;
+const eur = x => Math.round(x).toLocaleString('hu-HU') + ' €';
+function terv() {
+  const k = +document.getElementById('tk').value, b = +document.getElementById('tb').value, m = +document.getElementById('tm').value / 100, lat = +document.getElementById('tl').value;
+  document.getElementById('tko').textContent = k + ' db'; document.getElementById('tbo').textContent = b + ' Mbit/s';
+  document.getElementById('tmo').textContent = Math.round(m * 100) + '%'; document.getElementById('tlo').textContent = lat + ' ms';
+  const mbps = k * b, napi = mbps / 8 * 86400 / 1000, szurt = napi * m, fps = k * 5;
+  const sor = ESZK.map(([nev, f, w, ar]) => { const db = Math.ceil(fps / f) + (n1 ? 1 : 0); return [nev, db, db * (ar + w * W3)]; });
+  const best = sor.reduce((a, s) => s[2] < a[2] ? s : a);
+  document.getElementById('tt').innerHTML = sor.map(s => `<tr${s === best ? ' style="color:var(--amber);font-weight:700;"' : ''}><td>${s[0]}</td><td class="num">${s[1]}</td><td class="num">${eur(s[2])}</td></tr>`).join('');
+  document.getElementById('tgb').innerHTML = `felhő: ${Math.round(napi)} GB (a sáv ${(mbps / 10).toFixed(0)}%-a)<br>perem után: ${Math.round(szurt)} GB`;
+  const fok = 207 <= lat, pok = 12 <= lat;
+  document.getElementById('tlat').innerHTML = `felhő 207 ms <span class="${fok ? 'ok' : 'no'}">${fok ? '✓' : '✗'}</span> · perem 12 ms <span class="${pok ? 'ok' : 'no'}">${pok ? '✓' : '✗'}</span>`;
+  const felho3 = napi * GB * NAP3, perem3 = best[2] + szurt * GB * NAP3;
+  document.getElementById('tco').innerHTML = `csak felhő: ${eur(felho3)}<br>perem (${best[0][0]}) + felhő: ${eur(perem3)}`;
+  let v = '';
+  if (!fok && pok) v = 'A válaszidő-követelmény miatt a döntés már eldőlt: a perem kell. ';
+  else if (fok) v = 'A válaszidő itt nem dönt: a felhő is megfelelne. ';
+  if (!pok) v = 'Ilyen szigorú válaszidőt a perem sem teljesít: a feldolgozást még közelebb, magába a kamerába kellene tenni. ';
+  v += perem3 < felho3 ? `Költségben is a perem nyer: 3 év alatt kb. ${eur(felho3 - perem3)} megtakarítás.` : 'Költségben itt a felhő olcsóbb: kevés az adat, vagy szinte mindig van mozgás.';
+  if (mbps > 200) v += ' Figyelem: a kamerák egyedül a feltöltési sáv ' + (mbps / 10).toFixed(0) + '%-át foglalnák el.';
+  document.getElementById('tv').textContent = v;
+}
+['tk', 'tb', 'tm', 'tl'].forEach(i => document.getElementById(i).addEventListener('input', terv));
+const setN = v => { n1 = v; document.getElementById('r0').setAttribute('aria-pressed', !v); document.getElementById('r1').setAttribute('aria-pressed', v); terv(); };
+document.getElementById('r0').addEventListener('click', () => setN(false));
+document.getElementById('r1').addEventListener('click', () => setN(true));
+terv();
+</script>
+</body>
+</html>

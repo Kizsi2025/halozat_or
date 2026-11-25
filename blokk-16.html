@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16. blokk – Távirányítás: REST API · Hálózat-őr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 120px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+
+  .tune { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 24px; align-items: start; }
+  .lab { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 14px; height: 4px; margin-right: 6px; vertical-align: 3px; }
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 80px minmax(0, 1fr) 44px; gap: 10px; align-items: center; font-family: var(--mono); font-size: 13px; }
+  .bar .t { height: 14px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  .bar .t div { height: 100%; background: #5A6B78; transition: width .3s; }
+  .bar.hit .t div { background: var(--amber); } .bar.hit { color: var(--amber); font-weight: 700; }
+  .bar b { text-align: right; font-variant-numeric: tabular-nums; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--snow); }
+  .verdict { font-size: 15px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .cmp .card8 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card8.hot { border-top-color: var(--amber); } .cmp .card8.bad { border-top-color: var(--red); }
+  .cmp .num8 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .hot .num8 { color: var(--amber); } .cmp .bad .num8 { color: var(--red); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+
+  .strip { display: grid; grid-template-columns: repeat(58, minmax(0, 1fr)); gap: 2px; }
+  .strip span { aspect-ratio: .6; border-radius: 2px; background: #2E7D5B; }
+  .strip span.miss { background: transparent; border: 1px dashed var(--red); }
+  .strip span.fail { background: linear-gradient(#F26B5B 50%, #2E7D5B 50%); }
+  .strip span.bad { background: var(--red); }
+  .strip span.hid { background: #2E7D5B; }
+  .jobs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .jobs button { font-family: var(--mono); font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .jobs button[aria-pressed="true"] { background: var(--cyan); color: #16222C; border-color: var(--cyan); font-weight: 700; }
+  .opt { display: flex; flex-direction: column; gap: 8px; }
+  .opt label { display: flex; gap: 10px; align-items: center; font-size: 15px; cursor: pointer; }
+  .opt input { accent-color: var(--amber); width: 18px; height: 18px; }
+  .r321 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .r321 .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .r321 .big { font-family: var(--mono); font-size: 44px; font-weight: 700; }
+  .r321 select, .r321 input[type=number] { font-family: var(--mono); font-size: 15px; padding: 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); }
+
+
+  .arch { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: stretch; }
+  .arch .lay { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .arch .lay.edge { border-color: var(--amber); border-width: 2px; }
+  .arch .arr { align-self: center; font-family: var(--mono); color: var(--muted); font-size: 22px; }
+  .arch h3 { font-size: 20px; }
+  .ok { color: #5CC98A; } .no { color: var(--red); }
+
+  
+  
+  
+  .play { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 20px; }
+  .preset { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .preset button { font-size: 13.5px; padding: 7px 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .preset button:hover { border-color: var(--cyan); }
+  .req { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .req select, .req input[type=text], .req textarea { font-family: var(--mono); font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--snow); width: 100%; }
+  .req textarea { min-height: 70px; resize: vertical; }
+  .req .lbl { font-size: 13px; color: var(--muted); }
+  .chk { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+  .chk input { accent-color: var(--amber); width: 18px; height: 18px; }
+  pre.out { font-family: var(--mono); font-size: 13.5px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; white-space: pre-wrap; word-break: break-word; min-height: 60px; color: var(--snow); }
+  .code { font-family: var(--mono); font-size: 26px; font-weight: 700; }
+  .code.ok2 { color: #5CC98A; } .code.warn { color: var(--amber); } .code.bad { color: var(--red); }
+  .flow { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .flow .st { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .flow .st.hot { border-top-color: var(--amber); }
+  .flow h3 { font-size: 18px; }
+  @media (max-width: 860px) {
+    .play, .flow { grid-template-columns: 1fr; }
+    .head .wrap { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr !important; gap: 14px; }
+    .req { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 16. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">16. blokk · „D” modul · AIOps-mérnök szint</p>
+      <h1 style="font-size:clamp(40px, 6vw, 68px);">Távirányítás <span>REST API</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">2 óra gyakorlat</span>
+        <span class="chip">API konfigurációs teszt</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0440 · P3 · nyitott</span>
+      <p>„Jövő héttől vendég-wifi lesz az aulában, külön VLAN-on (40, „vendeg”). Ezt öt switchen kellene beállítani, és a hétvégén az új labor is jön. Nem kattintgatunk végig minden eszközt: oldjátok meg programból!” – rendszergazda</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>GET, POST és PATCH kérést küldesz Pythonból, tokenes bejelentkezéssel.</li>
+      <li>A státuszkódból megérted, mi történt, és a hibákat kezeled.</li>
+      <li>Lapozott választ teljesen beolvasol, és több eszközön konfigurációt állítasz be.</li>
+      <li>Idempotens beállító függvényt írsz, amely a lejáró tokent és a sebességkorlátot is kezeli.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc · két óra gyakorlat</p><h2>Rövid eligazítás, hosszú labor</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy, az API indítása</p></div>
+      <div class="seg e"><b>10–25</b><h3>Eligazítás</h3><p>Kérés, státuszkód, token, lapozás, idempotencia</p></div>
+      <div class="seg qz"><b>25–30</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>30–85</b><h3>Labor</h3><p>Hat küldetés, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Jegylezárás</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="keres">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Egy API-hívás menete</p>
+      <h2>Belépés, kérés, státuszkód, ellenőrzés</h2>
+      <p>Egy változtatás akkor kész, ha a szkript visszakérdezte, és az eszköz tényleg úgy áll, ahogy akartuk.</p>
+    </div>
+    <div class="flow">
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">1 · BELÉPÉS</span><h3>POST /auth</h3><p class="muted">jelszóért tokent kapunk</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">2 · KÉRÉS</span><h3>GET · POST · PATCH</h3><p class="muted">a token a fejlécben, az adat JSON-ban</p></div>
+      <div class="st"><span class="mono" style="font-size:12px;color:var(--cyan);letter-spacing:.08em;">3 · VÁLASZ</span><h3>Státuszkód</h3><p class="muted">előbb a szám, aztán a JSON</p></div>
+      <div class="st hot"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">4 · ELLENŐRZÉS</span><h3>GET újra</h3><p class="muted">tényleg úgy lett?</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="jatszoter">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: API-játszótér</p>
+      <h2>Küldj kérést, nézd meg a választ</h2>
+      <p>Egy kis gyakorló API a böngésződben (két kitalált eszköz, nem a labor adatai). Kezdd a <b>Belépés</b> gombbal, aztán próbáld ki a többit. Alul a kérés Python-kódja is megjelenik, ahogy a munkafüzetben írnád.</p>
+    </div>
+    <div class="preset" id="pre"></div>
+    <div class="play">
+      <div class="tool">
+        <div class="req">
+          <span class="lbl">Módszer</span><select id="am"><option>GET</option><option>POST</option><option>PATCH</option></select>
+          <span class="lbl">Útvonal</span><input type="text" id="ap" value="/api/v1/eszkozok" spellcheck="false">
+          <span class="lbl">Törzs (JSON)</span><textarea id="ab" spellcheck="false"></textarea>
+          <span class="lbl">Fejléc</span><label class="chk"><input type="checkbox" id="aa" checked> Authorization: Bearer &lt;token&gt;</label>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+          <button type="button" class="btn" id="send">Küldés →</button>
+          <button type="button" class="btn ghost" id="reset">Alaphelyzet</button>
+          <span class="mono muted" id="tokst" style="align-self:center;font-size:12.5px;">nincs token</span>
+        </div>
+        <p class="k mono" style="font-size:12px;color:var(--muted);margin-top:14px;">UGYANEZ PYTHONBAN</p>
+        <pre class="out" id="py"></pre>
+      </div>
+      <div class="result" aria-live="polite" style="position:static;">
+        <span class="k">Státuszkód</span>
+        <span class="code" id="st">–</span>
+        <p class="verdict" id="magy"></p>
+        <span class="k">Válasz (JSON)</span>
+        <pre class="out" id="resp"></pre>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:12px;">A játszótér belépési adata: demo / demo. Valódi rendszernél a jelszó soha nem kerül a kódba: titoktárolóból vagy getpass-szal olvassuk be.</p>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">API konfigurációs teszt · 10 pont · párban</p>
+      <h2>Hat küldetés, egy működő konfiguráció</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Az előkészítő cella a notebookban elindítja a gyakorló eszközkezelő API-t. Az M4 és az M5 ellenőrzője az eszközök állapotát nézi.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:72px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Bemelegítő</b></td><td>Belépés és leltár: melyik eszköz elérhetetlen?</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>Beteg port</b></td><td>Hol a legtöbb a CRC-hiba?</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>Lapozás</b></td><td>Hány sikertelen bejelentkezés van a naplóban?</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Push</b></td><td>Vendég-VLAN és az aula AP-portjai</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Idempotencia</b></td><td>Akárhányszor futtatható beállító függvény</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz</b></td><td>Firmware-audit</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">A szkript megtalálja a beteg portot, de lekapcsolni ember dönt.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/7dP5NkmhhdvdLzkdpXYWKR">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 17. blokk</p>
+        <h3>Önjavító hálózat – SDN</h3>
+        <p class="muted">Mi lenne, ha a hálózat maga javítaná ki a hibáit?</p>
+      </div>
+      <a class="btn" href="blokk-17.html">Tovább a 17. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+(function () {
+  // gyakorló mini-API a böngészőben (nem a labor adatai)
+  var S;
+  function alap() {
+    S = { tok: null, eszk: {
+      "sw-demo-a": { nev: "sw-demo-a", tipus: "switch", allapot: "üzemel", vlanok: { 1: "default", 10: "tanulo" }, portok: { "1/0/1": { port: "1/0/1", allapot: "up", vlan: 10, crc_hiba: 0 }, "1/0/2": { port: "1/0/2", allapot: "down", vlan: 10, crc_hiba: 0 }, "1/0/3": { port: "1/0/3", allapot: "up", vlan: 1, crc_hiba: 57 } } },
+      "sw-demo-b": { nev: "sw-demo-b", tipus: "switch", allapot: "elérhetetlen", vlanok: { 1: "default" }, portok: {} }
+    } };
+  }
+  alap();
+  function lista() { return Object.keys(S.eszk).map(function (k) { var e = S.eszk[k]; return { nev: e.nev, tipus: e.tipus, allapot: e.allapot }; }); }
+  function api(m, path, body, auth) {
+    var u = path.split("?")[0], p = u.split("/").filter(Boolean);
+    if (p[0] !== "api" || p[1] !== "v1") return [404, { hiba: "nincs ilyen végpont" }];
+    p = p.slice(2);
+    if (p[0] === "auth" && p.length === 1) {
+      if (m !== "POST") return [405, { hiba: "ide POST kell" }];
+      if (body && body.felhasznalo === "demo" && body.jelszo === "demo") { S.tok = "demo-" + Math.random().toString(16).slice(2, 10); return [200, { token: S.tok, tipus: "Bearer" }]; }
+      return [401, { hiba: "hibás felhasználónév vagy jelszó" }];
+    }
+    if (!auth || auth !== "Bearer " + S.tok || !S.tok) return [401, { hiba: "hiányzó vagy érvénytelen token" }];
+    if (p[0] === "eszkozok" && p.length === 1) return m === "GET" ? [200, lista()] : [405, { hiba: "ez a művelet itt nem támogatott" }];
+    if (p[0] === "eszkozok") {
+      var e = S.eszk[p[1]];
+      if (!e) return [404, { hiba: "nincs ilyen eszköz" }];
+      if (e.allapot === "elérhetetlen") return [503, { hiba: "az eszköz nem érhető el" }];
+      if (p[2] === "interfeszek" && p.length === 3 && m === "GET") return [200, Object.keys(e.portok).map(function (k) { return e.portok[k]; })];
+      if (p[2] === "interfeszek" && p.length === 4 && m === "PATCH") {
+        var port = decodeURIComponent(p[3]);
+        if (!e.portok[port]) return [404, { hiba: "nincs ilyen port" }];
+        if (!body || typeof body.vlan !== "number") return [400, { hiba: "kell: vlan (szám)" }];
+        if (!(body.vlan in e.vlanok)) return [400, { hiba: "a " + body.vlan + "-es VLAN nem létezik ezen az eszközön" }];
+        e.portok[port].vlan = body.vlan; return [200, e.portok[port]];
+      }
+      if (p[2] === "interfeszek" && p.length > 4) return [404, { hiba: "nincs ilyen végpont (kódoltad a perjelet a portnévben?)" }];
+      if (p[2] === "vlanok" && p.length === 3 && m === "GET") return [200, Object.keys(e.vlanok).map(function (k) { return { id: +k, nev: e.vlanok[k] }; })];
+      if (p[2] === "vlanok" && p.length === 3 && m === "POST") {
+        if (!body || typeof body.id !== "number" || typeof body.nev !== "string" || body.id < 2 || body.id > 4094) return [400, { hiba: "kell: id (2–4094, egész) és nev (szöveg)" }];
+        if (body.id in e.vlanok) return [409, { hiba: "ez a VLAN már létezik", letezo: { id: body.id, nev: e.vlanok[body.id] } }];
+        e.vlanok[body.id] = body.nev; return [201, { id: body.id, nev: body.nev }];
+      }
+    }
+    return [404, { hiba: "nincs ilyen végpont" }];
+  }
+  var KOD = { 200: "OK", 201: "Létrejött", 400: "Hibás kérés", 401: "Nincs jogosultság", 404: "Nincs ilyen", 405: "Nem támogatott művelet", 409: "Ütközés", 503: "Nem elérhető" };
+  var MAGY = { 200: "Sikerült, a válasz a kért adat.", 201: "Létrejött az új elem.", 400: "A kérés hibás: nézd meg a törzset (JSON).", 401: "Nincs (érvényes) token: előbb jelentkezz be, és küldd a fejlécben.", 404: "Nincs ilyen eszköz, port vagy végpont.", 405: "Ezen a címen ez a módszer nem használható.", 409: "Már létezik: egy idempotens szkript ezt nem hibának veszi.", 503: "Az eszköz nem válaszol: a szkript hagyja ki, és jelezze." };
+  var PRE = [
+    ["1 · Belépés", "POST", "/api/v1/auth", '{"felhasznalo": "demo", "jelszo": "demo"}', true],
+    ["Eszközlista token nélkül", "GET", "/api/v1/eszkozok", "", false],
+    ["Eszközlista", "GET", "/api/v1/eszkozok", "", true],
+    ["Portok", "GET", "/api/v1/eszkozok/sw-demo-a/interfeszek", "", true],
+    ["Elérhetetlen eszköz", "GET", "/api/v1/eszkozok/sw-demo-b/interfeszek", "", true],
+    ["Új VLAN (kétszer!)", "POST", "/api/v1/eszkozok/sw-demo-a/vlanok", '{"id": 50, "nev": "kamera"}', true],
+    ["Port VLAN-ja, kódolva", "PATCH", "/api/v1/eszkozok/sw-demo-a/interfeszek/1%2F0%2F3", '{"vlan": 50}', true],
+    ["Port VLAN-ja, kódolás nélkül", "PATCH", "/api/v1/eszkozok/sw-demo-a/interfeszek/1/0/3", '{"vlan": 50}', true]
+  ];
+  var $ = function (id) { return document.getElementById(id); };
+  var pre = $("pre");
+  PRE.forEach(function (x) { var b = document.createElement("button"); b.type = "button"; b.textContent = x[0]; b.onclick = function () { $("am").value = x[1]; $("ap").value = x[2]; $("ab").value = x[3]; $("aa").checked = x[4]; kod(); }; pre.appendChild(b); });
+  function kod() {
+    var m = $("am").value, p = $("ap").value, b = $("ab").value.trim(), a = $("aa").checked;
+    var s = "r = requests." + m.toLowerCase() + '("http://127.0.0.1:8016' + p + '"';
+    if (a) s += ", headers=H";
+    if (b) s += ", json=" + b.replace(/\btrue\b/g, "True").replace(/\bfalse\b/g, "False").replace(/\bnull\b/g, "None");
+    s += ")\nprint(r.status_code, r.json())";
+    $("py").textContent = s;
+  }
+  ["am", "ap", "ab", "aa"].forEach(function (id) { $(id).addEventListener("input", kod); $(id).addEventListener("change", kod); });
+  $("send").onclick = function () {
+    var body = null, raw = $("ab").value.trim();
+    if (raw) { try { body = JSON.parse(raw); } catch (e) { return mutat(400, { hiba: "a törzs nem érvényes JSON" }); } }
+    var r = api($("am").value, $("ap").value.trim(), body, $("aa").checked && S.tok ? "Bearer " + S.tok : null);
+    mutat(r[0], r[1]);
+  };
+  $("reset").onclick = function () { alap(); $("tokst").textContent = "nincs token"; mutat(null); };
+  function mutat(k, d) {
+    var st = $("st");
+    if (k === null) { st.textContent = "–"; st.className = "code"; $("resp").textContent = ""; $("magy").textContent = "Alaphelyzet."; return; }
+    st.textContent = k + " " + (KOD[k] || ""); st.className = "code " + (k < 300 ? "ok2" : k < 500 ? "warn" : "bad");
+    $("resp").textContent = JSON.stringify(d, null, 2); $("magy").textContent = MAGY[k] || "";
+    $("tokst").textContent = S.tok ? "token: " + S.tok : "nincs token";
+  }
+  kod(); mutat(null);
+})();
+
+</script>
+</body>
+</html>

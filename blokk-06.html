@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6. blokk – Mennyi lesz holnap? Kapacitás-előrejelzés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;600&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+
+  .head { padding: 48px 0 56px; border-bottom: 1px solid var(--line); }
+  .head .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 40px; align-items: end; }
+  .crumb { font-family: var(--mono); font-size: 13px; margin-bottom: 28px; display: inline-block; }
+  .head h1 { font-size: clamp(40px, 6vw, 68px); font-weight: 700; letter-spacing: -.015em; margin: 12px 0 18px; }
+  .head h1 span { color: var(--amber); display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  .handover { border-left-color: var(--cyan); }
+  .handover .label { color: var(--cyan); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  .handover p { font-family: var(--body); font-size: 16px; color: var(--snow); line-height: 1.55; }
+
+  .goals { counter-reset: g; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .goals li { counter-increment: g; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .goals li::before { content: counter(g, decimal-leading-zero); font-family: var(--mono); font-weight: 700; color: var(--amber); }
+
+  .timeline { display: grid; grid-template-columns: 10fr 30fr 5fr 40fr 5fr; gap: 4px; }
+  .seg { border-top: 6px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .seg.e { border-top-color: var(--cyan); } .seg.qz { border-top-color: var(--amber); } .seg.g { border-top-color: var(--green); }
+  .seg b { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  .seg h3 { font-size: 18px; } .seg p { font-size: 14px; color: var(--muted); }
+
+  .tool { background: #0A131B; border: 1px solid var(--line); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+
+  .lab { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr); gap: 24px; align-items: start; }
+  .chart { width: 100%; height: auto; display: block; background: #0B141C; border-radius: 8px; }
+  .row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 88px; gap: 12px; align-items: center; }
+  .row label { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .row output { font-family: var(--mono); font-size: 14px; color: var(--snow); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type=range] { accent-color: var(--amber); width: 100%; }
+  .toggle { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toggle button { font-family: var(--mono); font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--snow); cursor: pointer; }
+  .toggle button[aria-pressed="true"] { background: var(--amber); color: #16222C; border-color: var(--amber); font-weight: 700; }
+  .result { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; }
+  .result .k { font-family: var(--mono); font-size: 12px; color: var(--cyan); letter-spacing: .08em; text-transform: uppercase; }
+  .result .big { font-family: var(--mono); font-size: 36px; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .result .mid { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--snow); font-variant-numeric: tabular-nums; }
+  .result .calc { font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .verdict { font-size: 15px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+  .cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .cmp .card6 { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--cyan); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .cmp .card6.bad { border-top-color: var(--red); } .cmp .card6.ok { border-top-color: var(--amber); }
+  .cmp .num6 { font-family: var(--mono); font-size: 40px; font-weight: 700; line-height: 1; }
+  .cmp .bad .num6 { color: var(--red); } .cmp .ok .num6 { color: var(--amber); }
+
+  .next { display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--cyan); border-radius: 10px; padding: 24px; }
+  .next h3 { font-size: 26px; margin-top: 6px; }
+
+  @media (max-width: 860px) {
+    .head .wrap, .lab { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; gap: 14px; }
+    .row { grid-template-columns: 120px minmax(0, 1fr) 76px; }
+    .result { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap">
+  <span><span class="status-dot">●</span> BOLYAI NET · NOC · 6. MŰSZAK</span>
+  <span><a href="index.html">Hálózat-őr főoldal</a></span>
+</div></div>
+
+<header class="head">
+  <div class="wrap">
+    <div>
+      <a class="crumb" href="index.html">← Mind a 31 blokk</a>
+      <p class="eyebrow">6. blokk · „B” modul · L2 elemző szint</p>
+      <h1>Mennyi lesz holnap? <span>Kapacitás-előrejelzés</span></h1>
+      <div class="chips">
+        <span class="chip">2 × 45 perc</span>
+        <span class="chip">1 óra elmélet · 1 óra labor</span>
+        <span class="chip">Kapacitástervezési küldetés</span>
+        <span class="chip">Jóspap jelvény</span>
+      </div>
+    </div>
+    <div class="ticket handover">
+      <span class="label">#BN-0220 · P3 · nyitott</span>
+      <p>„A szolgáltató szerint a sávszélesség-bővítést 6 héttel előre kell megrendelni, és 80%-os terhelésnél bővíteni kell. Mikor rendeljünk?” – igazgatóság</p>
+    </div>
+  </div>
+</header>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">A műszak végére</p><h2>Ezt fogod tudni</h2></div>
+    <ol class="goals">
+      <li>Egyenest illesztesz a terhelési adatra, és elmondod, mit jelent a meredekség.</li>
+      <li>Észreveszed, ha a hétvégék vagy a szünet elrontják a modellt, és kiszűröd őket.</li>
+      <li>Időrendben választod szét a tanító- és tesztadatot, és MAE-vel, MAPE-vel méred a hibát.</li>
+      <li>Kiszámolod, mikor éri el a terhelés a küszöböt, és mikor kell legkésőbb rendelni.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="wrap">
+    <div class="sec-head"><p class="eyebrow">Menetrend · 90 perc</p><h2>Egy műszak, öt szakasz</h2></div>
+    <div class="timeline">
+      <div class="seg e"><b>0–10</b><h3>Átadás</h3><p>A mai jegy</p></div>
+      <div class="seg e"><b>10–40</b><h3>Eligazítás</h3><p>Regresszió, csapdák, hibamérés, küszöbdátum</p></div>
+      <div class="seg qz"><b>40–45</b><h3>Kvíz</h3><p>5 kérdés</p></div>
+      <div class="seg g"><b>45–85</b><h3>Labor</h3><p>Kapacitástervezési küldetés párban, a 20. percben káoszkártya</p></div>
+      <div class="seg g"><b>85–90</b><h3>Zárás</h3><p>Jegylezárás</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="csapda">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Az első csapda</p>
+      <h2>Ugyanaz az adat, ellentétes következtetés</h2>
+      <p>Szeptember–októberi adatra illesztett egyenes meredeksége. Ha a hétvégék és az őszi szünet is benne vannak, a tanítóidőszak végén lévő alacsony értékek lehúzzák az egyenest.</p>
+    </div>
+    <div class="cmp">
+      <div class="card6 bad"><span class="mono" style="font-size:12px;color:var(--red);letter-spacing:.08em;">MINDEN NAP</span><span class="num6">−2,44</span><p class="muted">Mbit/s naponta: „csökken, nem kell bővíteni”</p></div>
+      <div class="card6 ok"><span class="mono" style="font-size:12px;color:var(--amber);letter-spacing:.08em;">CSAK TANÍTÁSI NAPOK</span><span class="num6">+2,30</span><p class="muted">Mbit/s naponta: nő, és novemberben átlagosan 3%-ot téved</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="josda">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Próbáld ki: kapacitás-jósda</p>
+      <h2>Mikor éri el a küszöböt, és mikor rendelünk?</h2>
+      <p>A gyakorló adat mind a 74 napja (szeptember 1. – november 13.). A modell itt, a böngésződben illeszt egyenest. Válts a két adatkör között, és állítsd a küszöböt, az átfutási időt, a biztonsági sávot és az új eszközöket.</p>
+    </div>
+    <div class="lab">
+      <div class="tool">
+        <div class="toggle" role="group" aria-label="Melyik napokra illesszünk?">
+          <button type="button" id="t-tan" aria-pressed="true">Csak tanítási napok</button>
+          <button type="button" id="t-mind" aria-pressed="false">Minden nap</button>
+        </div>
+        <svg class="chart" id="chart" viewBox="0 0 760 360" role="img" aria-label="A napi csúcsterhelés pontjai, az illesztett trendvonal és a küszöb"></svg>
+        <div class="legend"><span><i style="background:#4CC3D9"></i>tanítási nap</span><span><i style="background:#5A6B78"></i>hétvége, szünet</span><span><i style="background:#F0A830"></i>trend</span><span><i style="background:#F26B5B"></i>küszöb</span></div>
+        <div class="row"><label for="thr">küszöb</label><input type="range" id="thr" min="60" max="95" step="5" value="80"><output id="thro"></output></div>
+        <div class="row"><label for="lead">átfutási idő</label><input type="range" id="lead" min="2" max="12" step="1" value="6"><output id="leado"></output></div>
+        <div class="row"><label for="sig">biztonsági sáv</label><input type="range" id="sig" min="0" max="2" step="1" value="0"><output id="sigo"></output></div>
+        <div class="row"><label for="dev">új laptop jan. 4-től</label><input type="range" id="dev" min="0" max="200" step="20" value="0"><output id="devo"></output></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <span class="k">Trend</span>
+        <span class="mid" id="eq"></span>
+        <span class="k">Eléri a küszöböt</span>
+        <span class="big" id="cross"></span>
+        <span class="k">Rendelés legkésőbb</span>
+        <span class="big" id="order"></span>
+        <p class="calc" id="calc"></p>
+        <p class="verdict" id="verdict"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="labor">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Kapacitástervezési küldetés · 10 pont · párban</p>
+      <h2>Hat küldetés, egy döntés</h2>
+      <p>A munkafüzet linkjét az oktatótól kapod. Minden küldetés után futtasd az ellenőrzőt: <span class="mono">ellenoriz("M2", valasz)</span>.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:56px;">#</th><th>Küldetés</th><th>Feladat</th><th style="width:64px;">Pont</th></tr></thead>
+        <tbody>
+          <tr><td class="num">M1</td><td><b>Nézd meg az adatot</b></td><td>Grafikon a tanítási és a többi napról, mi történik október végén?</td><td class="num">–</td></tr>
+          <tr><td class="num">M2</td><td><b>Két modell, két meredekség</b></td><td>Minden nap vs. csak tanítási napok, melyik a hihető?</td><td class="num">2</td></tr>
+          <tr><td class="num">M3</td><td><b>Teszt novemberen</b></td><td>Időrendi felosztás, MAE és MAPE</td><td class="num">2</td></tr>
+          <tr><td class="num">M4</td><td><b>Küszöbdátum</b></td><td>Mikor éri el a 800-at, mikor rendelünk?</td><td class="num">2</td></tr>
+          <tr><td class="num">M5</td><td><b>Eszközalapú modell</b></td><td>MAE és Mbit/s eszközönként</td><td class="num">2</td></tr>
+          <tr><td class="num">M6</td><td><b>Bónusz: bizonytalanság</b></td><td>A ±2 szórásos sáv legkorábbi dátuma</td><td class="num">+</td></tr>
+          <tr><td class="num">⚠</td><td><b>Káoszkártya</b></td><td>A 20. percben érkezik</td><td class="num">2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="margin-top:14px;">Jóspap jelvény: ha az M3-ban a MAPE 10% alatt van, és meg tudod indokolni, miért ilyen pontos a modell.</p>
+  </div>
+</section>
+
+<section class="block" style="border-bottom:none;">
+  <div class="wrap" style="display:flex;flex-direction:column;gap:16px;">
+    <div class="next">
+      <div>
+        <p class="eyebrow">Óra anyaga</p>
+        <h3>Az eligazítás diái</h3>
+        <p class="muted">A 15 diás prezentáció, amelyet az órán láttál.</p>
+      </div>
+      <a class="btn ghost" href="https://claude.ai/artifact/7hmB6GiGrEugUfmS5jEcZp">Prezentáció megnyitása →</a>
+    </div>
+    <div class="next">
+      <div>
+        <p class="eyebrow">Következő műszak · 7. blokk</p>
+        <h3>Ami kilóg a sorból – Anomáliadetektálás</h3>
+        <p class="muted">Ma a „normális” jövőt jósoltuk. Jövő héten azt keressük, ami ettől eltér.</p>
+      </div>
+      <a class="btn" href="blokk-07.html">Tovább a 7. blokkra →</a>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <span><a href="index.html" style="color:inherit;">← Hálózat-őr főoldal</a></span>
+  <span>Oktató: Kiss Zsigmond · 2026/2027</span>
+</div></footer>
+
+<script>
+// [nap sorszáma szept. 1-től, csúcs Mbit/s, tanítási nap]
+const D = [[0,455.7,1],[1,444.0,1],[2,441.6,1],[3,454.6,1],[4,74.9,0],[5,89.3,0],[6,468.7,1],[7,424.1,1],[8,419.3,1],[9,431.0,1],[10,441.2,1],[11,102.5,0],[12,81.3,0],[13,476.8,1],[14,457.8,1],[15,432.6,1],[16,481.4,1],[17,490.6,1],[18,105.2,0],[19,91.1,0],[20,485.1,1],[21,491.1,1],[22,479.6,1],[23,487.2,1],[24,496.9,1],[25,67.7,0],[26,80.5,0],[27,482.7,1],[28,474.4,1],[29,451.8,1],[30,506.3,1],[31,492.3,1],[32,109.5,0],[33,85.4,0],[34,503.9,1],[35,489.7,1],[36,520.7,1],[37,505.5,1],[38,483.7,1],[39,95.1,0],[40,102.6,0],[41,540.8,1],[42,531.8,1],[43,516.2,1],[44,536.7,1],[45,558.9,1],[46,83.7,0],[47,94.7,0],[48,560.7,1],[49,569.7,1],[50,542.5,1],[51,549.2,1],[52,91.8,0],[53,62.8,0],[54,97.1,0],[55,100.3,0],[56,91.7,0],[57,96.5,0],[58,101.6,0],[59,86.3,0],[60,109.9,0],[61,107.7,0],[62,595.4,1],[63,544.9,1],[64,584.1,1],[65,595.9,1],[66,612.5,1],[67,84.1,0],[68,108.3,0],[69,590.6,1],[70,582.3,1],[71,622.1,1],[72,616.8,1],[73,616.2,1]];
+const START = Date.UTC(2026, 8, 1), DAY = 864e5, PER_DEV = 1.16, NEWDAY = 125; // 2027-01-04 = 125. nap
+const fmt = n => n.toFixed(1).replace('.', ',').replace('-', '−');
+const dstr = n => { const d = new Date(START + Math.floor(n) * DAY); return d.getUTCFullYear() + '. ' + ['jan.','febr.','márc.','ápr.','máj.','jún.','júl.','aug.','szept.','okt.','nov.','dec.'][d.getUTCMonth()] + ' ' + d.getUTCDate() + '.'; };
+const TODAY = 74; // 2026-11-14
+let only = true;
+function fit(pts) {
+  const n = pts.length, mx = pts.reduce((s, p) => s + p[0], 0) / n, my = pts.reduce((s, p) => s + p[1], 0) / n;
+  let sxy = 0, sxx = 0; pts.forEach(p => { sxy += (p[0] - mx) * (p[1] - my); sxx += (p[0] - mx) ** 2; });
+  const b = sxy / sxx, a = my - b * mx;
+  const res = pts.map(p => p[1] - (a + b * p[0])), m = res.reduce((s, r) => s + r, 0) / n;
+  const sd = Math.sqrt(res.reduce((s, r) => s + (r - m) ** 2, 0) / (n - 1));
+  return { a, b, sd };
+}
+function render() {
+  const thr = +document.getElementById('thr').value * 10, lead = +document.getElementById('lead').value,
+        sig = +document.getElementById('sig').value, dev = +document.getElementById('dev').value;
+  document.getElementById('thro').textContent = thr + ' Mbit/s';
+  document.getElementById('leado').textContent = lead + ' hét';
+  document.getElementById('sigo').textContent = sig ? '+' + sig + ' σ' : 'nincs';
+  document.getElementById('devo').textContent = dev + ' db';
+  const pts = D.filter(p => !only || p[2] === 1);
+  const { a, b, sd } = fit(pts);
+  const add = dev * PER_DEV, up = sig * sd;
+  const level = n => a + b * n + up + (n >= NEWDAY ? add : 0);
+  // keresés napról napra (max. 4 év)
+  let cross = null;
+  if (b > 0 || add > 0) for (let n = 0; n < 1500; n++) if (level(n) >= thr) { cross = n; break; }
+  if (cross !== null && cross > 0 && b > 0 && !(add > 0 && cross === NEWDAY)) cross = (thr - a - up - (cross >= NEWDAY ? add : 0)) / b;
+  document.getElementById('eq').textContent = fmt(a) + ' + ' + fmt(b) + ' · nap';
+  const cr = document.getElementById('cross'), or = document.getElementById('order');
+  let verdict = '';
+  if (cross === null) { cr.textContent = 'soha'; or.textContent = '–'; verdict = 'A trend nem nő: a modell szerint ráérünk. Biztos, hogy ez igaz? Nézd meg, mely napok vannak benne.'; }
+  else {
+    const o = Math.floor(cross - lead * 7);
+    cr.textContent = dstr(cross); or.textContent = dstr(o);
+    if (o < TODAY) verdict = 'A rendelési határidő már elmúlt: azonnal szólni kell az igazgatóságnak.';
+    else if (o - TODAY <= 14) verdict = 'Már csak ' + (o - TODAY) + ' nap van a rendelésig. Ez sürgős jegy.';
+    else verdict = 'Még ' + (o - TODAY) + ' nap van a rendelésig (a mai nap 2026. nov. 14.).';
+    if (!only) verdict += ' Figyelem: a hétvégék és a szünet is benne vannak a modellben.';
+  }
+  document.getElementById('calc').textContent = 'szórás: ' + fmt(sd) + ' Mbit/s' + (sig ? ' · sáv: +' + fmt(up) : '') + (dev ? ' · laptopok: +' + fmt(add) + ' Mbit/s' : '');
+  document.getElementById('verdict').textContent = verdict;
+  // rajz
+  const W = 760, H = 360, X0 = 48, X1 = 744, Y0 = 330, Y1 = 14, XMAX = 190;
+  const x = n => X0 + (X1 - X0) * Math.min(n, XMAX) / XMAX, y = v => Y0 - (Y0 - Y1) * Math.max(0, Math.min(v, 1000)) / 1000;
+  let s = '';
+  [200, 400, 600, 800, 1000].forEach(g => { s += `<line x1="${X0}" x2="${X1}" y1="${y(g)}" y2="${y(g)}" stroke="#2A3C4B"/><text x="${X0 - 6}" y="${y(g) + 4}" fill="#8FA3B3" font-size="11" text-anchor="end" font-family="JetBrains Mono, monospace">${g}</text>`; });
+  [[0, 'szept.'], [30, 'okt.'], [61, 'nov.'], [91, 'dec.'], [122, 'jan.'], [153, 'febr.'], [181, 'márc.']].forEach(([n, l]) => { s += `<text x="${x(n)}" y="${Y0 + 22}" fill="#8FA3B3" font-size="11" font-family="JetBrains Mono, monospace">${l}</text>`; });
+  s += `<line x1="${x(TODAY)}" x2="${x(TODAY)}" y1="${Y1}" y2="${Y0}" stroke="#8FA3B3" stroke-dasharray="3 5"/><text x="${x(TODAY) + 4}" y="${Y1 + 12}" fill="#8FA3B3" font-size="11" font-family="JetBrains Mono, monospace">ma</text>`;
+  s += `<line x1="${X0}" x2="${X1}" y1="${y(thr)}" y2="${y(thr)}" stroke="#F26B5B" stroke-width="2" stroke-dasharray="8 6"/>`;
+  if (up) s += `<line x1="${x(0)}" y1="${y(a + up)}" x2="${x(XMAX)}" y2="${y(a + b * XMAX + up)}" stroke="#F0A830" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"/>`;
+  let path = `M${x(0)},${y(a)} L${x(Math.min(NEWDAY, XMAX))},${y(a + b * Math.min(NEWDAY, XMAX))}`;
+  if (add) path += ` L${x(NEWDAY)},${y(a + b * NEWDAY + add)}`;
+  path += ` L${x(XMAX)},${y(a + b * XMAX + add)}`;
+  s += `<path d="${path}" fill="none" stroke="#F0A830" stroke-width="3"/>`;
+  D.forEach(p => { s += `<circle cx="${x(p[0])}" cy="${y(p[1])}" r="3.6" fill="${p[2] ? '#4CC3D9' : '#5A6B78'}"/>`; });
+  if (cross !== null && cross <= XMAX) {
+    s += `<circle cx="${x(cross)}" cy="${y(thr)}" r="7" fill="#F0A830" stroke="#0B141C" stroke-width="2"/>`;
+    const o = Math.floor(cross - lead * 7); if (o >= 0) s += `<line x1="${x(o)}" x2="${x(o)}" y1="${Y1}" y2="${Y0}" stroke="#F0A830" stroke-width="2"/><text x="${x(o) + 4}" y="${Y0 - 8}" fill="#F0A830" font-size="11" font-family="JetBrains Mono, monospace">rendelés</text>`;
+  }
+  document.getElementById('chart').innerHTML = s;
+}
+function setOnly(v) { only = v; document.getElementById('t-tan').setAttribute('aria-pressed', v); document.getElementById('t-mind').setAttribute('aria-pressed', !v); render(); }
+document.getElementById('t-tan').addEventListener('click', () => setOnly(true));
+document.getElementById('t-mind').addEventListener('click', () => setOnly(false));
+['thr', 'lead', 'sig', 'dev'].forEach(i => document.getElementById(i).addEventListener('input', render));
+render();
+</script>
+</body>
+</html>
